@@ -1,0 +1,19 @@
+{
+  "name": "@catalex/website",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The Catalex product website",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "preview": "node scripts/serve.mjs --dist",
+    "test": "playwright test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.59.1"
+  }
+}

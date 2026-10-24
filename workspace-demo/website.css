@@ -1,0 +1,34 @@
+@font-face {
+	font-family: Geist;
+	src: url("./geist-regular.ttf");
+	font-weight: 400;
+	font-display: swap;
+}
+@font-face {
+	font-family: Geist;
+	src: url("./geist-semibold.ttf");
+	font-weight: 500 700;
+	font-display: swap;
+}
+@font-face {
+	font-family: "Geist Mono";
+	src: url("./geist-mono-regular.ttf");
+	font-display: swap;
+}
+html,
+body,
+#root {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+}
+.website-loading {
+	height: 100%;
+	display: grid;
+	place-items: center;
+	font:
+		14px Geist,
+		sans-serif;
+	color: #71717a;
+}
