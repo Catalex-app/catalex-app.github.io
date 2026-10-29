@@ -40,7 +40,7 @@ reduced motion. Tests use ports 4322 and 4323 (built site and development-server
 
 - `index.html`: short copy and semantic page structure.
 - `styles.css`: responsive styles and adapted app design details.
-- `app.js`: carousel and placeholder action interactions.
+- `app.js`: welcome sequence, carousel, and expanded highlights interactions.
 - `workspace-demo/`: thin fixture adapter around the actual Catalex renderer.
 - `assets/workspace/`: local screenshot-capture bundle; excluded from the published build.
 - `assets/`: cat artwork, local fonts, licenses, and actual app screenshots.
@@ -53,6 +53,55 @@ review using the actual app components. It is no longer embedded or linked on th
 PDF, and no live agent or filesystem. Reloading resets the sample. See the design
 provenance document for renderer rebuilding, screenshot capture, and dependency
 license details.
+
+## Opening sequence
+
+The homepage opens with the research/collaboration reaction typing onto a white
+screen, including its subscripts and Catalex label. The arrow shaft draws first,
+followed by its head. Its Catalex mark moves into the header as the navigation and page appear.
+The equation then disappears; the hero has the existing copy on the left and
+the original workspace capture on the right, without decorative backgrounds.
+Narrow screens stack the copy and capture.
+
+Refreshing the homepage replays the sequence, including after scrolling down.
+Reduced motion, section links, and browser back/forward navigation skip it.
+Keyboard, pointer, or scroll input can skip it immediately. The page remains
+usable without JavaScript, with a timed fallback if the main script fails.
+Playwright covers the intermediate and final states, replay, interruption,
+reduced motion, and missing-script fallback.
+
+### Printer opening trial
+
+Open `http://127.0.0.1:4321/?intro=typewriter` for the optional printer-lit
+landing screen. The entire viewport is paper. The original math font displays
+Research_human + Collaboration_agent → Paper on one line, with Catalex above
+the arrow. The formula scales to fit narrow screens without wrapping.
+
+The opening starts in deep charcoal (#101012) with Research_human already printed and
+the head positioned at its right edge. The left-facing lamp turns on while the
+head stays still, revealing Research_human. The head then moves right and prints
+only the rest of the equation, revealing ink directly behind its left edge.
+The 3.2-second pass builds momentum gradually, cruises through the middle, and
+brakes over a longer distance into the parking position. The head moves
+continuously through the text without per-letter stops. A rounded black rail runs above the head, connected through
+a vertical hanger to form a T-shaped assembly. The head only moves horizontally
+and finishes in a reserved parking space to the right of the formula. The cone keeps a fixed size and angle as it moves, with radial distance falloff.
+At the final parking position its faint end nearly reaches the left screen edge. The whole
+paper surface then brightens. Beta,
+GitHub, and the bottom scroll prompt are already drawn underneath the darkness;
+the light reveals them without a separate opacity animation.
+
+Downward scroll accumulates to 260 CSS pixels, then slides the landing screen up
+to the existing homepage. Reverse input subtracts from the total; scrolling during
+printing does not count. Wheel line/page modes and touch swipes are normalized.
+The prompt can also be activated directly, and Page Down/Space work from the
+landing screen. Download and GitHub remain normal links. Reduced motion shows
+the completed light surface immediately and skips the slide. Refresh replays it.
+The regular homepage remains available without the query parameter.
+
+`typewriter.js` is loaded only for this trial. The full-surface texture, rounded
+rail, and satin-metal printer head use original SVG artwork in
+`assets/typewriter-{paper,intro,head}.svg`. No Platen assets are bundled.
 
 ## Publishing later
 

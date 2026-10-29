@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="none">
+  <title>Full-surface neutral paper</title>
+  <defs>
+    <filter id="fiber"><feTurbulence type="fractalNoise" baseFrequency=".78" numOctaves="3" seed="14" stitchTiles="stitch"/><feColorMatrix type="saturate" values="0"/></filter>
+  </defs>
+  <path d="M0 0H1600V1000H0Z" fill="#fafafa"/>
+  <path d="M0 0H1600V1000H0Z" filter="url(#fiber)" opacity=".035"/>
+</svg>

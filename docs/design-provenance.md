@@ -1,5 +1,66 @@
 # Website design and app reuse
 
+## Neutral printer landing screen — 2026-10-29
+
+The optional `?intro=typewriter` entrance uses the full viewport as a neutral
+paper surface, the original CatalexMath font, a one-line equation, and the
+existing Beta/GitHub actions. The user rejected the earlier Safegate direction;
+its green/cream palette and cinematic treatment are removed from this iteration.
+
+The latest material reference is the user-supplied `IMG_3902.PNG`: a rounded
+black rail, soft reflections, and a warm light pool with gradual falloff. The
+image is used for visual comparison only and is not bundled. The overhead
+T-shaped mount and left-facing lamp follow the requested Catalex mechanism.
+Additional references are tactile mechanisms in Platen and MD Vinyl, with
+Braun-inspired restraint within Catalex's established white/zinc/black palette:
+
+- <https://apps.apple.com/us/app/platen-paper-ink/id6809529696>
+- <https://apps.apple.com/jp/app/id1606306441>
+
+The MD Vinyl App Store screenshots were captured and inspected at
+`/private/tmp/catalex-md-vinyl-reference.png`. They inform the relationship
+between a visible mechanism and its actual action, plus restrained material
+highlights. These are our reference interpretations, not a claim that either
+app cites Braun or grants a license to its assets.
+
+All site assets remain original SVG drawings. The head uses a matte white
+housing, black inkjet edge, subtle metal supports, minimal vents, and one orange
+status indicator. It has no Platen capsule geometry, borrowed textures, models,
+images, code, audio, or branding. The full-screen paper is nearly white with
+very light procedural grain. The head's geometry and printing are connected:
+
+- `assets/typewriter-head.svg`: viewBox `0 -72 220 212`, with a bearing centered
+  at y=-47, a vertical hanger, and the active inkjet edge at x=12, y=70. The
+  emitter and live beam point left.
+- `assets/typewriter-intro.svg`: a black cylindrical rail with curved reflections,
+  end collars, and a soft contact shadow.
+- `assets/typewriter-paper.svg`: edge-free neutral paper covering the viewport.
+
+The nozzle moves on the text line, rather than below it. The clipping boundary
+is the nozzle's actual screen position. Research_human is already printed at
+startup, with the nozzle resting at its right edge. The stationary lamp reveals
+that term before the head moves right to print the rest behind its nozzle.
+The print pass is a single continuous movement. Integrated cosine velocity ramps
+provide gradual acceleration, a steady cruise, and longer braking into parking.
+The 3.2-second movement preserves continuous position, velocity, and acceleration
+at the joins. The earlier per-letter stops and term pauses are superseded. Normal app ink sits below the lighting layer; the
+left-facing cone has a fixed range and angle with feathered edges and radial
+distance falloff. Its shape translates with the nozzle without stretching.
+After the
+pass, the head remains at the right of the formula on the same fixed-height
+rail. The one-line layout reserves this parking bay so the entire housing stays
+inside the viewport. Only X changes during the pass; the rail and hanger never
+rise or drop. The cone range is measured once per layout so its faint end reaches within
+12px (mobile) or 24px (desktop) of the left viewport edge at the final position. A separate ambient term in the SVG mask then brightens the entire
+paper surface to reveal the already drawn actions and scroll hint. Those
+controls have constant opacity 1
+and no fade-in animation; they sit beneath the illumination layer.
+
+Accumulated scrolling, touch, keyboard, reduced motion, refresh replay, link
+destinations, and the transition to the existing main screen are retained.
+The older whole-typewriter and click-on-Catalex studies are superseded. Earlier
+Instagram and Safegate references are historical context, not the current style.
+
 Revised 2026-10-23 for issue #311 following the first visual review.
 
 ## Page design

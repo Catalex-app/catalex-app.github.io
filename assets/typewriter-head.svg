@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -72 220 212" fill="none">
+  <title>Rail-mounted T-shaped printer carriage with a left-facing lamp</title>
+  <defs>
+    <linearGradient id="body" x1="94" y1="22" x2="120" y2="120" gradientUnits="userSpaceOnUse"><stop stop-color="#fdfdfb"/><stop offset=".45" stop-color="#efefec"/><stop offset="1" stop-color="#d3d4d2"/></linearGradient>
+    <linearGradient id="edge" x1="100" y1="22" x2="100" y2="121" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset=".5" stop-color="#d2d3d0"/><stop offset="1" stop-color="#9d9f9d"/></linearGradient>
+    <linearGradient id="foot" x1="0" y1="117" x2="0" y2="134" gradientUnits="userSpaceOnUse"><stop stop-color="#a5a7a5"/><stop offset=".4" stop-color="#e3e4e1"/><stop offset="1" stop-color="#848785"/></linearGradient>
+    <linearGradient id="nozzle" x1="9" y1="0" x2="29" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#45474a"/><stop offset=".35" stop-color="#17191c"/><stop offset="1" stop-color="#5d5f60"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-35%" width="170%" height="190%"><feDropShadow dx="1" dy="5" stdDeviation="3.5" flood-color="#18181b" flood-opacity=".2"/></filter>
+    <filter id="lamp" x="-300%" y="-20%" width="700%" height="140%"><feGaussianBlur stdDeviation="1.8"/></filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="105" y="-47" width="10" height="76" rx="2" fill="url(#nozzle)"/>
+    <path d="M107 -45V27" stroke="#d9dbd7" stroke-width="2"/>
+    <rect x="84" y="-66" width="52" height="38" rx="5" fill="url(#nozzle)" stroke="#151719" stroke-width="1.4"/>
+    <path d="M89 -61H131" stroke="#707679" stroke-opacity=".4" stroke-width="1.5"/>
+    <path d="M89 -32H131" stroke="#080a0b" stroke-width="2"/>
+    <path d="M88 -56V-38" stroke="#5c6265" stroke-opacity=".35" stroke-width="1.4"/>
+    <rect x="12" y="10" width="18" height="120" rx="4" fill="url(#nozzle)"/>
+    <rect x="25" y="22" width="178" height="99" rx="13" fill="#b4b6b3"/>
+    <rect x="25" y="19" width="178" height="98" rx="13" fill="url(#body)" stroke="url(#edge)" stroke-width="1.5"/>
+    <path d="M39 23H187Q199 23 199 36" stroke="#fff" stroke-opacity=".8" stroke-width="1.4"/>
+    <path d="M27 102H201" stroke="#bfc1be" stroke-opacity=".65"/>
+    <path d="M27 104H201" stroke="#f7f7f3" stroke-opacity=".7"/>
+    <rect x="40" y="39" width="57" height="47" rx="2" fill="#ecece9"/>
+    <path d="M46 48H89M46 54H89M46 60H89M46 66H89M46 72H89M46 78H89" stroke="#484a4b" stroke-width="2.3"/>
+    <circle cx="178" cy="38" r="4" fill="#bb5f30"/>
+    <circle cx="177.2" cy="37.2" r="2.2" fill="#e98a4c"/>
+    <path d="M124 73H178" stroke="#c7c9c5" stroke-width="1.5"/>
+    <path d="M124 76H178" stroke="#fdfdfa" stroke-width="1.5"/>
+    <rect x="9" y="27" width="5" height="86" rx="2" fill="#fff8e9" opacity=".6" filter="url(#lamp)"/>
+    <rect x="11" y="29" width="2.5" height="82" rx="1.2" fill="#fff9e9"/>
+    <path d="M18 23V117" stroke="#686b6b" stroke-width="1"/>
+  </g>
+</svg>

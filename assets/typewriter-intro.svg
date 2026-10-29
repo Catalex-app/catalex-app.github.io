@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1254 80" preserveAspectRatio="none" fill="none">
+  <title>Rounded black printer rail with soft reflections and end collars</title>
+  <defs>
+    <linearGradient id="cylinder" x1="0" y1="22" x2="0" y2="58" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#060708"/><stop offset=".2" stop-color="#131618"/><stop offset=".38" stop-color="#363a3c"/><stop offset=".5" stop-color="#202426"/><stop offset=".76" stop-color="#0c0e10"/><stop offset="1" stop-color="#040506"/>
+    </linearGradient>
+    <linearGradient id="collar" x1="0" y1="11" x2="0" y2="69" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#191c1e"/><stop offset=".5" stop-color="#0a0c0e"/><stop offset="1" stop-color="#030405"/>
+    </linearGradient>
+    <filter id="rail-shadow" x="-5%" y="-50%" width="110%" height="200%"><feGaussianBlur stdDeviation="4"/></filter>
+    <filter id="reflection" x="0" y="-100%" width="100%" height="300%"><feGaussianBlur stdDeviation="1.6"/></filter>
+  </defs>
+  <rect x="2" y="31" width="1250" height="33" rx="16" fill="#141518" opacity=".25" filter="url(#rail-shadow)"/>
+  <rect y="22" width="1254" height="36" rx="18" fill="url(#cylinder)"/>
+  <path d="M5 35H1249" stroke="#8e9699" stroke-opacity=".24" stroke-width="3" filter="url(#reflection)"/>
+  <path d="M3 54H1251" stroke="#030405" stroke-opacity=".7" stroke-width="2"/>
+  <rect y="11" width="24" height="58" rx="3" fill="url(#collar)"/>
+  <path d="M2 13H21V66" stroke="#34383a" stroke-opacity=".38" stroke-width="1.3"/>
+  <rect x="1230" y="11" width="24" height="58" rx="3" fill="url(#collar)"/>
+  <path d="M1232 13H1251V66" stroke="#34383a" stroke-opacity=".38" stroke-width="1.3"/>
+</svg>

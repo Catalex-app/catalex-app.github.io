@@ -1,19 +1,137 @@
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 
-setupHeroEntrance();
+if (new URLSearchParams(location.search).get("intro") === "typewriter") {
+  import("./typewriter.js").then(({setupTypewriterEntrance}) => setupTypewriterEntrance(reducedMotion)).catch(setupHeroEntrance);
+} else {
+  setupHeroEntrance();
+}
 setupCarousel();
 setupHighlightsOverlay();
 
 function setupHeroEntrance() {
-  if (reducedMotion.matches || (location.hash && location.hash !== "#top") || new URLSearchParams(location.search).has("view")) return;
-  const hero = document.querySelector(".hero");
-  hero.classList.add("hero-enter");
+  const root = document.documentElement;
+  const scene = document.querySelector(".intro-scene");
+  const animations = [];
+  const controller = new AbortController();
+  let finished = false;
   const finish = () => {
-    for (const animation of hero.getAnimations({subtree: true})) animation.finish();
+    if (finished) return;
+    finished = true;
+    clearTimeout(window.catalexIntroFallback);
+    controller.abort();
+    root.classList.remove("intro-pending");
+    root.dataset.intro = "complete";
+    if (window.catalexIntroScrollRestoration) {
+      history.scrollRestoration = window.catalexIntroScrollRestoration;
+    }
+    scene?.remove();
+    for (const animation of animations) animation.cancel();
   };
-  // Keyboard users can act immediately, even during the opening sequence.
-  hero.addEventListener("focusin", finish);
-  reducedMotion.addEventListener("change", event => { if (event.matches) finish(); });
+  if (!scene || !root.classList.contains("intro-pending") || reducedMotion.matches) {
+    finish();
+    return;
+  }
+  scrollTo({top: 0, left: 0, behavior: "instant"});
+
+  const options = {signal: controller.signal};
+  // Navigation and changes to the viewport always take precedence over the intro.
+  document.addEventListener("keydown", finish, options);
+  document.addEventListener("focusin", finish, options);
+  scene.addEventListener("pointerdown", finish, options);
+  for (const event of ["wheel", "touchstart", "resize", "pagehide", "hashchange"]) {
+    addEventListener(event, finish, {...options, passive: true});
+  }
+  // Some browsers restore a refresh's old scroll position after parsing. Keep
+  // the welcome at the top; deliberate wheel/touch/key input still skips it.
+  const keepAtTop = () => {
+    if (scrollY > 0) scrollTo({top: 0, left: 0, behavior: "instant"});
+  };
+  addEventListener("scroll", keepAtTop, {...options, passive: true});
+  addEventListener("load", keepAtTop, options);
+  document.addEventListener("visibilitychange", () => { if (document.hidden) finish(); }, options);
+  reducedMotion.addEventListener("change", () => { if (reducedMotion.matches) finish(); }, options);
+
+  function animate(element, frames, timing) {
+    const animation = element.animate(frames, {
+      duration: 380, easing: "cubic-bezier(.22, 1, .36, 1)", fill: "both", ...timing,
+    });
+    // Cancellation is expected when a visitor skips, resizes, or navigates away.
+    animation.finished.catch(() => {});
+    animations.push(animation);
+    return animation;
+  }
+
+  async function play() {
+    await document.fonts.ready;
+    if (finished || !root.classList.contains("intro-pending")) return finish();
+    keepAtTop();
+    root.dataset.intro = "forming";
+    function type(selector, delay) {
+      const element = scene.querySelector(selector);
+      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      let index = 0;
+      // Keep the final layout reserved, including the original subscript markup.
+      // Discrete character reveals work with proportional text without clipping glyphs.
+      for (const node of nodes) {
+        const fragment = document.createDocumentFragment();
+        for (const character of node.textContent) {
+          const letter = document.createElement("span");
+          letter.className = "intro-letter";
+          letter.textContent = character;
+          fragment.append(letter);
+          animate(letter, [{opacity: 1}, {opacity: 1}], {
+            delay: delay + index++ * 38, duration: 1, easing: "linear", fill: "forwards",
+          });
+        }
+        node.replaceWith(fragment);
+      }
+      element.style.opacity = "1";
+    }
+    type(".reactant", 80);
+    type(".operator", 600);
+    type(".reactant:nth-child(3)", 700);
+    type(".catalyst-brand > span", 1420);
+    scene.querySelector(".catalyst-brand").style.opacity = "1";
+    animate(scene.querySelector(".catalyst-cat"), [{opacity: 0}, {opacity: 1}], {
+      delay: 1420, duration: 180,
+    });
+    animate(scene.querySelector(".reaction-shaft"), [
+      {strokeDashoffset: "1"}, {strokeDashoffset: "0"},
+    ], {delay: 1700, duration: 440, easing: "linear"});
+    animate(scene.querySelector(".reaction-head"), [
+      {strokeDashoffset: "1"}, {strokeDashoffset: "0"},
+    ], {delay: 2140, duration: 160, easing: "linear"});
+    type(".product", 2320);
+    // Leave one short beat to read the completed equation before the handoff.
+    await animate(scene, [{opacity: 1}, {opacity: 1}], {duration: 2820}).finished;
+    if (finished || !root.classList.contains("intro-pending")) return finish();
+
+    const header = document.querySelector(".site-header");
+    const brand = header.querySelector(".brand");
+    const source = scene.querySelector(".catalyst-brand");
+    const from = source.getBoundingClientRect();
+    const to = brand.getBoundingClientRect();
+    source.style.visibility = "hidden";
+    root.dataset.intro = "docking";
+    // Move the real header mark from the equation's measured position to its home.
+    const flight = animate(brand, [
+      {opacity: 1, transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.height / to.height})`},
+      {opacity: 1, transform: "translate(0, 0) scale(1)"},
+    ], {duration: 820, easing: "cubic-bezier(.65, 0, .2, 1)"});
+    animate(scene, [{opacity: 1}, {opacity: 0}], {duration: 300});
+    animate(header, [{borderColor: "transparent"}, {borderColor: "#e4e4e7"}], {duration: 500});
+    for (const control of header.querySelectorAll(":scope > :not(.brand)")) {
+      animate(control, [{opacity: 0}, {opacity: 1}], {delay: 180, duration: 500});
+    }
+    const content = animate(document.querySelector("#main"), [
+      {opacity: 0, transform: "translateY(14px)"}, {opacity: 1, transform: "translateY(0)"},
+    ], {delay: 420, duration: 620});
+    await Promise.all([flight.finished, content.finished]);
+    finish();
+  }
+  play().catch(finish);
 }
 
 function setupCarousel() {
@@ -316,23 +434,10 @@ function setupHighlightsOverlay() {
   }
 }
 
-// Preview destinations stay local until the release and public repository are ready.
-for (const link of document.querySelectorAll('[data-placeholder]')) {
-  link.addEventListener('click', event => {
-    event.preventDefault();
-    if (link.dataset.placeholder === 'download') return;
-    document.querySelector('#hero-action-status').textContent = link.dataset.placeholder === 'beta'
-      ? 'The beta download link will be added here.'
-      : 'The GitHub link will be added here.';
-  });
-}
-
-
 // Reveal the landing page in small groups, without changing its layout.
 function setupScrollReveals() {
   if (reducedMotion.matches || !("IntersectionObserver" in window)) return;
   const groups = [
-    ["#workspace", 0],
     ["#highlights .section-topline", 0],
     ["#highlights .highlight-track", 60],
     ["#highlights .carousel-controls", 0],
@@ -344,14 +449,14 @@ function setupScrollReveals() {
   ];
   const targets = new Map();
   const animations = new Map();
-  function reveal(element, animate = true, entrance = false) {
+  function reveal(element, animate = true) {
     if (element.dataset.reveal !== "pending") return;
     element.dataset.reveal = "visible";
     if (!animate) return;
     const animation = element.animate([
       {opacity: 0, transform: "translateY(16px)"},
       {opacity: 1, transform: "translateY(0)"},
-    ], {duration: element.id === "workspace" ? 900 : 560, delay: entrance ? 900 : targets.get(element), easing: "cubic-bezier(.22, 1, .36, 1)", fill: "backwards"});
+    ], {duration: 560, delay: targets.get(element), easing: "cubic-bezier(.22, 1, .36, 1)", fill: "backwards"});
     animations.set(element, animation);
     const cleanup = () => {
       if (animations.get(element) === animation) animations.delete(element);
@@ -375,10 +480,8 @@ function setupScrollReveals() {
     document.querySelectorAll(selector).forEach((element, index) => {
       const rect = element.getBoundingClientRect();
       const visible = rect.top < innerHeight && rect.bottom > 0;
-      const entrance = visible && element.id === "workspace" && document.querySelector(".hero-enter");
-      element.dataset.reveal = visible && !entrance ? "visible" : "pending";
+      element.dataset.reveal = visible ? "visible" : "pending";
       targets.set(element, selector === ".research-principles li" && innerWidth > 820 ? index % 2 * 60 : delay);
-      if (entrance) reveal(element, true, true);
       observer.observe(element);
     });
   }

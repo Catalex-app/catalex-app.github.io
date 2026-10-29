@@ -38,10 +38,15 @@ const server = http.createServer(async (request, response) => {
 			response.end("Not found");
 			return;
 		}
-		const relative = pathname.slice(base.length) || "index.html";
+		if (pathname === `${base}download`) {
+            response.writeHead(301, { Location: `${base}download/` });
+            response.end();
+            return;
+        }
+        const relative = (pathname.endsWith("/") ? `${pathname}index.html` : pathname).slice(base.length);
 		// Only public site files are served, even in development.
 		if (
-			!["index.html", "styles.css", "app.js"].includes(relative) &&
+			!["index.html", "download/index.html", "styles.css", "app.js", "typewriter.js"].includes(relative) &&
 			!relative.startsWith("assets/")
 		) {
 			response.writeHead(404);
