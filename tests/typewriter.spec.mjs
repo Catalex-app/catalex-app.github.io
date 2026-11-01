@@ -268,7 +268,8 @@ for (const width of [390, 1440]) {
     expect(Math.abs(line.width-stageWidth)).toBeLessThan(1);
     expect(actions.y).toBeGreaterThan(line.y+line.height+30);
     expect(hint.y).toBeGreaterThan(actions.y+actions.height+8);
-    expect(Math.abs(actions.x+actions.width/2-width/2)).toBeLessThan(1);
+    const sceneBox = await scene.boundingBox();
+    expect(Math.abs(actions.x+actions.width/2-sceneBox.x-sceneBox.width/2)).toBeLessThan(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:`output/terminal-ready-test-${width}.png`});
     for(const delta of [120,120]){

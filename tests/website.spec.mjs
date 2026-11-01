@@ -86,6 +86,7 @@ for (const width of [360, 390, 768, 949, 1440]) {
 		await page.setViewportSize({ width, height: 1000 });
 		await page.emulateMedia({ reducedMotion: "reduce" });
 		await page.goto("./#main");
+		await expect(page.locator('html')).toHaveAttribute('data-intro', 'complete');
 		await page.evaluate(() => document.fonts.ready);
 		expect(
 			await page.evaluate(
@@ -97,10 +98,15 @@ for (const width of [360, 390, 768, 949, 1440]) {
 		const demo=await page.locator('.hero-workspace').boundingBox();
 		expect(demo.y-copy.y-copy.height).toBeGreaterThanOrEqual(27);
 		expect(Math.abs(demo.width-hero.width)).toBeLessThan(1);
-		expect(Math.abs(demo.x+demo.width/2-width/2)).toBeLessThan(1);
+		// Classic scrollbars reserve layout space on Linux and Windows.
+		const contentWidth = await page.evaluate(() => document.documentElement.clientWidth);
+		expect(Math.abs(demo.x+demo.width/2-contentWidth/2)).toBeLessThan(1);
 		await expect(page.locator('.hero-copy')).toHaveCSS('text-align','center');
 		await page.emulateMedia({ reducedMotion: "reduce" });
-		await page.locator('.highlight-track').focus();
+		const track = page.locator('.highlight-track');
+		await track.scrollIntoViewIfNeeded();
+		await track.focus();
+		await expect(track).toBeFocused();
 		await page.keyboard.press('ArrowRight');
 		await expect(page.locator('.carousel-dots button').nth(1)).toHaveAttribute('aria-pressed', 'true');
 		await page.emulateMedia({ reducedMotion: "reduce" });

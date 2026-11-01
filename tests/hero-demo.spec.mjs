@@ -123,7 +123,7 @@ for(const [width,height] of [[1440,1000],[390,844]]) {
       const page=await browser.newPage({baseURL,viewport:{width,height},reducedMotion:'no-preference'});
       const ranges=[];
       page.on('response',response=>{if(response.url().endsWith('hero-demo.mp4'))ranges.push(response.status());});
-      await page.goto('./?playIntro=0#top');
+      await page.goto('./?playIntro=0#top', {waitUntil:'domcontentloaded'});
       await expect(page.locator('html')).toHaveAttribute('data-intro','ready');
       await page.getByRole('button',{name:'Scroll down to learn more'}).click();
       for(let attempt=0;attempt<2;attempt++) {
@@ -134,7 +134,9 @@ for(const [width,height] of [[1440,1000],[390,844]]) {
         await expect.poll(()=>video.evaluate(el=>el.currentTime)).toBeGreaterThan(.2);
         expect(await video.evaluate(el=>el.error)).toBeNull();
         await expect(page.getByRole('button',{name:/^(Pause|Play) demo$/})).toHaveCount(0);
-        if(attempt===0)await page.reload();
+        // A looping media request can keep WebKit's load event pending on Linux.
+        // The next iteration explicitly checks Main readiness and actual playback.
+        if(attempt===0)await page.reload({waitUntil:'domcontentloaded'});
       }
       expect(ranges).toContain(206);
       await page.screenshot({path:`output/hero-demo-webkit-${width}.png`});
