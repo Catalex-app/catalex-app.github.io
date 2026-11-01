@@ -65,8 +65,10 @@ test("GitHub source renders guides and rewrites links for a pinned revision", as
 			),
 		),
 	);
-	// No requests are needed by a reader: all content has been rendered into the HTML.
-	assert.doesNotMatch(writing, /<script|CATALEX_DOCS_DIR/);
+	// The complete fallback is rendered; refresh uses a local script and pinned source.
+	assert.match(writing, /data-repository-page=/);
+	assert.match(writing, /src="\.\.\/\.\.\/docs-live.js"/);
+	assert.doesNotMatch(writing, /CATALEX_DOCS_DIR/);
 	t.mock.method(
 		globalThis,
 		"fetch",

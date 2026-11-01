@@ -1,3 +1,4 @@
+const compactNavigation = matchMedia("(max-width: 760px)");
 const welcomeTemplate = document.querySelector(".intro-scene")?.cloneNode(true);
 
 export function returnToWelcome(reducedMotion, {pushHistory = true, focus = false} = {}) {
@@ -51,10 +52,14 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
   let finished = false;
   let returning = Boolean(returnOptions);
   let returnStarted = false;
+  let compactTransition = false;
   const returnMotions = [];
   let settleReturn = () => {};
   let scrollAmount = 0;
+  let compactScrollTimer;
   let touchY = null;
+  let touchStart = null;
+  let touchEnd = null;
   let cameraFrame = 0;
   let cancelCursorFlight = () => {};
   let stopViewMotion = () => {};
@@ -70,6 +75,7 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
     cancelCursorFlight();
     stopViewMotion();
     clearTimeout(window.catalexIntroFallback);
+    clearTimeout(compactScrollTimer);
     controller.abort();
     for (const animation of animations) animation.cancel();
     landActions();
@@ -148,6 +154,7 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
     const learnMore = document.createElement("button");
     learnMore.type = "button";
     learnMore.className = "terminal-scroll";
+    learnMore.setAttribute("aria-label", "Scroll down to learn more");
     learnMore.append("Scroll down to learn more");
     const progress = document.createElement("span");
     progress.setAttribute("aria-hidden", "true");
@@ -343,8 +350,9 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
       cameraFrame = requestAnimationFrame(frame);
     }
     function measure() {
-      // Mirror the Welcome cat's inset and anchor replay's expansion on its left edge.
+      // Mirror the Welcome cat's inset while keeping the replay icon fixed.
       header.style.setProperty("--header-brand-width", `${header.querySelector(".catalex-mark").getBoundingClientRect().width}px`);
+      learnMore.firstChild.textContent = compactNavigation.matches ? "Swipe up to explore" : "Scroll down to learn more";
       // Measure the incoming screen in its final coordinate space, not above the viewport.
       if (returning) scene.style.transform = "none";
       const short = innerHeight < 450;
@@ -533,6 +541,7 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
         settleReturn = () => {
           if (!returning) return;
           returning = false;
+          compactTransition = false;
           root.classList.remove("welcome-returning");
           for (const motion of returnMotions) motion.cancel();
           scrollTo({top:0,left:0,behavior:"instant"});
@@ -541,6 +550,16 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
           if (returnOptions.focus) header.querySelector(".brand").focus({preventScroll:true});
         };
         if (reducedMotion.matches) return settleReturn();
+        if (compactNavigation.matches) {
+          for (const part of pageParts) {
+            returnMotions.push(animate(part, [{opacity:1},{opacity:0}], {duration:420,easing:"ease-in-out"}));
+          }
+          compactTransition = true;
+          const motion = animate(scene, [{opacity:0},{opacity:1}], {duration:420,easing:"ease-in-out"});
+          returnMotions.push(motion);
+          motion.finished.then(settleReturn).catch(() => {});
+          return;
+        }
         const slide = (element, frames, duration = 600) => {
           const motion = animate(element, frames, {duration,easing:"cubic-bezier(.22,.75,.25,1)"});
           returnMotions.push(motion);
@@ -560,7 +579,7 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
         slide(scene, [{transform:"translateY(-100svh)",opacity:0},{transform:"translateY(0)",opacity:1}])
           .finished.then(settleReturn).catch(() => {});
       }
-      if (focusActionAfterCompile) actions.querySelector("a").focus({preventScroll:true});
+      if (focusActionAfterCompile) [...actions.querySelectorAll("a")].find(link => link.getClientRects().length)?.focus({preventScroll:true});
     }
     let compilePress = null;
     let compilePressMotion = null;
@@ -669,6 +688,20 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
       viewControls.inert = true;
       entering = true;
       focusOnEntry = focusAfter;
+      if (compactNavigation.matches) {
+        compactTransition = true;
+        root.dataset.intro = "docking";
+        actions.inert = true;
+        replayIntro.inert = true;
+        learnMore.disabled = true;
+        if (reducedMotion.matches) return finish();
+        for (const part of pageParts) {
+          animate(part, [{opacity:0},{opacity:1}], {duration:420,easing:"ease-in-out"});
+        }
+        await animate(scene, [{opacity:1},{opacity:0}], {duration:420,easing:"ease-in-out"}).finished;
+        finish();
+        return;
+      }
       const headerCat = header.querySelector(".brand img");
       const headerCatFrom = getComputedStyle(headerCat).left;
       root.dataset.intro = "docking";
@@ -783,8 +816,14 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
     function accumulate(delta, focusAfter = false) {
       if (root.dataset.intro !== "ready" || entering || !Number.isFinite(delta)) return;
       scrollAmount = Math.max(0, scrollAmount + delta);
-      scene.style.setProperty("--scroll-progress", Math.min(1, scrollAmount / 260));
-      if (scrollAmount >= 260) enter(focusAfter).catch(finish);
+      if (compactNavigation.matches) {
+        clearTimeout(compactScrollTimer);
+        compactScrollTimer = setTimeout(() => { scrollAmount = 0; }, 300);
+        if (scrollAmount >= 56) enter(focusAfter).catch(finish);
+      } else {
+        scene.style.setProperty("--scroll-progress", Math.min(1, scrollAmount / 260));
+        if (scrollAmount >= 260) enter(focusAfter).catch(finish);
+      }
     }
     learnMore.addEventListener("click", event => enter(event.detail === 0).catch(finish), options);
     replayIntro.addEventListener("click", event => {
@@ -810,7 +849,7 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
       event.preventDefault();
     }, options);
     const onWelcomeWheel = event => {
-      if (event.ctrlKey) return;
+      if (event.ctrlKey || event.metaKey || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
       event.preventDefault();
       const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
       accumulate(event.deltaY * unit);
@@ -818,17 +857,36 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
     scene.addEventListener("wheel", onWelcomeWheel, {...options, passive: false});
     header.addEventListener("wheel", onWelcomeWheel, {...options, passive: false});
     scene.addEventListener("touchstart", event => {
+      touchStart = touchEnd = null;
       touchY = event.touches.length === 1 ? event.touches[0].clientY : null;
+      if (compactNavigation.matches && event.touches.length === 1 &&
+          !event.target.closest("a,button,input,textarea,select,summary,details")) {
+        const touch = event.touches[0];
+        touchStart = touchEnd = {x:touch.clientX,y:touch.clientY};
+      }
     }, {...options, passive: true});
     scene.addEventListener("touchmove", event => {
-      if (touchY === null || event.touches.length !== 1) { touchY = null; return; }
+      if (event.touches.length !== 1) { touchY = touchStart = touchEnd = null; return; }
+      const touch = event.touches[0];
+      if (compactNavigation.matches) {
+        if (!touchStart) return;
+        touchEnd = {x:touch.clientX,y:touch.clientY};
+        if (Math.abs(touchEnd.y-touchStart.y) > Math.abs(touchEnd.x-touchStart.x) && event.cancelable) event.preventDefault();
+        return;
+      }
+      if (touchY === null) return;
       event.preventDefault();
-      const y = event.touches[0].clientY;
-      accumulate(touchY - y);
-      touchY = y;
+      accumulate(touchY - touch.clientY);
+      touchY = touch.clientY;
     }, {...options, passive: false});
-    scene.addEventListener("touchend", () => { touchY = null; }, options);
-    scene.addEventListener("touchcancel", () => { touchY = null; }, options);
+    scene.addEventListener("touchend", () => {
+      if (compactNavigation.matches && touchStart && touchEnd) {
+        const distance = touchStart.y-touchEnd.y;
+        if (distance >= 56 && distance > Math.abs(touchEnd.x-touchStart.x)*1.3) enter().catch(finish);
+      }
+      touchY = touchStart = touchEnd = null;
+    }, options);
+    scene.addEventListener("touchcancel", () => { touchY = touchStart = touchEnd = null; }, options);
     addEventListener("keydown", event => {
       if (event.altKey || event.ctrlKey || event.metaKey || event.target.closest?.("a, button, input, textarea")) return;
       const steps = {ArrowDown: 70, ArrowUp: -70, PageDown: 260, " ": 260, End: 260};
@@ -836,7 +894,12 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
       event.preventDefault();
       accumulate(steps[event.key], true);
     }, options);
-    addEventListener("resize", () => entering ? finish() : ready(), options);
+    addEventListener("resize", () => {
+      // Mobile browser chrome can resize the viewport during a swipe.
+      // Let the crossfade finish instead of cutting it short.
+      if (compactTransition && compactNavigation.matches) { measure(); return; }
+      entering ? finish() : ready();
+    }, options);
     reducedMotion.addEventListener("change", () => { if (reducedMotion.matches) entering ? finish() : ready(); }, options);
     addEventListener("pagehide", finish, options);
     addEventListener("hashchange", finish, options);

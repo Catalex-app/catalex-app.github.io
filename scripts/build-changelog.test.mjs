@@ -56,7 +56,8 @@ echo hello
   assert.match(html, /src="https:\/\/raw.githubusercontent.com\/Catalex-app\/Catalex\/v0.2.0\/assets\/example.png"/);
   assert.match(html, /&lt;script&gt;/);
   assert.match(html, /<code class="language-sh">echo hello/);
-  assert.doesNotMatch(html, /<script/);
+  assert.doesNotMatch(html, /<script>alert/);
+  assert.match(html, /src="\.\.\/docs-live.js"/);
 });
 
 test("unreleased filtering respects Markdown sections, code fences and reference links", async t => {

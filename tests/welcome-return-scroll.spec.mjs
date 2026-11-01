@@ -70,7 +70,7 @@ test("native small pixel wheel events reveal the hint and accumulate progress", 
   await expect(page.locator("html")).toHaveAttribute("data-intro", "complete");
 });
 
-for (const width of [1440, 390]) {
+for (const width of [1440]) {
   test(`upward scroll at Main's top reveals progress and returns to Welcome at ${width}px`, async ({page}) => {
     await page.setViewportSize({width, height:950});
     await page.goto("./#main");

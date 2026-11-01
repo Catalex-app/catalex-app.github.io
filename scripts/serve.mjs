@@ -16,6 +16,7 @@ const types = {
 	".html": "text/html; charset=utf-8",
 	".css": "text/css; charset=utf-8",
 	".js": "text/javascript; charset=utf-8",
+    ".mjs": "text/javascript; charset=utf-8",
 	".svg": "image/svg+xml",
 	".png": "image/png",
 	".jpg": "image/jpeg",
@@ -50,7 +51,7 @@ const server = http.createServer(async (request, response) => {
         const relative = (pathname.endsWith("/") ? `${pathname}index.html` : pathname).slice(base.length);
 		// Only public site files are served, even in development.
 		if (
-			!["index.html", "download/index.html", "changelog/index.html", "styles.css", "app.js", "typewriter.js", "docs.css"].includes(relative) &&
+			!["index.html", "download/index.html", "changelog/index.html", "styles.css", "app.js", "typewriter.js", "navigation.js", "docs-live.js", "docs.css"].includes(relative) &&
 			!relative.startsWith("assets/") &&
             !/^docs\/(?:[a-z][a-z0-9-]*\/)*index\.html$/.test(relative)
 		) {
@@ -58,7 +59,7 @@ const server = http.createServer(async (request, response) => {
 			response.end("Not found");
 			return;
 		}
-		const publicRoot = relative.startsWith("docs/") || relative === "changelog/index.html" ? path.join(project, "dist") : root;
+		const publicRoot = relative.startsWith("assets/content/") || relative.startsWith("docs/") || relative === "changelog/index.html" ? path.join(project, "dist") : root;
 		const resolved = path.resolve(publicRoot, relative);
 		if (!resolved.startsWith(`${root}${path.sep}`)) {
 			response.writeHead(404);

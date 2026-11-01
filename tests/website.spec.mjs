@@ -157,8 +157,9 @@ for (const width of [390, 1010]) {
       expect(await page.evaluate(()=>scrollY)).toBe(top);
       const box=await header.boundingBox();
       expect(box.y).toBe(width<600 ? 12 : 16);
-      expect(box.height).toBe(width<600 ? 92 : 64);
-      await expect(page.locator(".header-download")).toBeInViewport();
+      expect(box.height).toBe(width<600 ? 60 : 64);
+      if(width>760) await expect(page.locator(".header-download")).toBeInViewport();
+      else await expect(page.locator(".header-download")).toBeHidden();
       await expect(page.locator(".header-github")).toBeInViewport();
       expect(await header.evaluate(el=>el.contains(document.elementFromPoint(innerWidth/2,el.getBoundingClientRect().top+12)))).toBe(true);
     }
@@ -351,7 +352,11 @@ for (const width of [390, 1040]) {
     page.on('pageerror', error => failures.push(error.message));
     page.on('response', response => { if (response.status() >= 400) failures.push(response.url()); });
     await page.goto('./#main');
-    await page.locator('.header-download').click();
+    if(width>760) await page.locator('.header-download').click();
+    else {
+      await expect(page.locator('.header-download')).toBeHidden();
+      await page.goto('./download/');
+    }
     await expect(page).toHaveURL(/\/catalex\.github\.io\/download\/$/);
     await expect(page.getByRole('heading', {name: 'Welcome to Catalex. Beta'})).toBeVisible();
     expect(await page.locator('.download-icon').evaluate(img => img.complete && img.naturalWidth === 512)).toBe(true);
@@ -360,7 +365,11 @@ for (const width of [390, 1040]) {
     await expect(download).toHaveAttribute('href', 'https://github.com/Catalex-app/Catalex/releases');
     await page.locator('.site-header .brand').click();
     await page.getByRole('button',{name:'Scroll down to learn more'}).click();
-    await page.locator('.header-download').click();
+    if(width>760) await page.locator('.header-download').click();
+    else {
+      await expect(page.locator('.header-download')).toBeHidden();
+      await page.goto('./download/');
+    }
     await expect(page).toHaveURL(url);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.screenshot({path: `output/download-${width}.png`, fullPage: true});

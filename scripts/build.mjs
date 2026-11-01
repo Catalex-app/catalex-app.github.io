@@ -31,10 +31,18 @@ for (const ref of refs) {
 const output = path.join(root, "dist");
 await rm(output, { recursive: true, force: true });
 await mkdir(output);
-for (const file of ["index.html", "download", "styles.css", "app.js", "typewriter.js", "assets", "docs.css"]) {
+for (const file of ["index.html", "download", "styles.css", "app.js", "typewriter.js", "navigation.js", "docs-live.js", "assets", "docs.css"]) {
 	await cp(path.join(root, file), path.join(output, file), { recursive: true, filter: (source) => source !== path.join(root, "assets/workspace") });
 }
 for (const [page, html] of renderedPages) await writeFile(path.join(output, page), html);
+// Ship the same renderer locally; visitors do not depend on a JavaScript CDN.
+const runtime = path.join(output, "assets/content");
+await mkdir(runtime, {recursive:true});
+await cp(path.join(root, "node_modules/marked/lib/marked.esm.js"), path.join(runtime, "marked.js"));
+await cp(path.join(root, "node_modules/marked/LICENSE"), path.join(runtime, "LICENSE.md"));
+const markdownModule = await readFile(path.join(root, "scripts/markdown.mjs"), "utf8");
+await writeFile(path.join(runtime, "markdown.mjs"), markdownModule.replace('from "marked"', 'from "./marked.js"'));
+await cp(path.join(root, "scripts/repository-markdown.mjs"), path.join(runtime, "repository-markdown.mjs"));
 await buildDocs(root, output);
 await buildChangelog(root, output);
 await writeFile(path.join(output, ".nojekyll"), "");

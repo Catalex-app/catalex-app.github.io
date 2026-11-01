@@ -110,7 +110,7 @@ for(const [width,height] of [[1440,1000],[390,844],[844,390]]) {
     const description=await scene.locator(".welcome-description").boundingBox();
     const controls=await scene.locator(".welcome-views").boundingBox();
     await expect(scene.locator(".welcome-title")).toHaveCount(0);
-    await expect(scene.getByRole("link",{name:"Beta is now available"})).toHaveAttribute("href","./download/");
+    await expect(scene.locator('a[href="./download/"]')).toHaveAttribute("href","./download/");
     expect(description.y).toBeGreaterThan(0);
     expect(caption.y+caption.height).toBeLessThan(actions.y-8);
     expect(actions.y-caption.y-caption.height).toBeLessThan(20);
@@ -421,8 +421,7 @@ test("reduced motion presents the completed terminal result and keyboard entry w
   await page.keyboard.press("Tab");
   await expect(scene.getByRole("button", {name: "Preview only"})).toBeFocused();
   await page.keyboard.press("Tab");
-  await expect(scene.getByRole("link", {name: "Beta is now available"})).toBeFocused();
-  await page.keyboard.press("Tab");
+
   await expect(scene.getByRole("link", {name: "GitHub"})).toBeFocused();
   await page.keyboard.press("Tab");
   await expect(scene.getByRole("button", {name: "Scroll down to learn more"})).toBeFocused();
@@ -438,8 +437,8 @@ test("the landing download action works without entering the main screen", async
   await expect(page.getByRole("heading", {name: "Welcome to Catalex."})).toBeVisible();
 });
 
-test("touch scroll accumulation enters while pinch and horizontal wheel do not", async ({page}) => {
-  await page.setViewportSize({width: 390, height: 844});
+test("wide-screen touch accumulation stays unchanged while pinch and horizontal wheel do not enter", async ({page}) => {
+  await page.setViewportSize({width: 844, height: 844});
   await page.emulateMedia({reducedMotion: "reduce"});
   await page.goto("./?intro=typewriter");
   await expect(page.locator("html")).toHaveAttribute("data-intro", "ready");

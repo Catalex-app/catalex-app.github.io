@@ -8,7 +8,10 @@ for (const width of [390, 1440]) {
     page.on("pageerror", error => errors.push(error.message));
     for (const route of ["./#main", "./download/", "./docs/development/"]) {
       await page.goto(route);
-      await page.locator(".header-changelog").click();
+      if(width<=760) {
+        await page.locator('.mobile-navigation summary').click();
+        await page.locator('.mobile-navigation').getByRole('link', {name:'Changelog',exact:true}).click();
+      } else await page.locator(".header-changelog").click();
       await expect(page).toHaveURL(/\/changelog\/$/);
       await expect(page.getByRole("heading", {level:1})).toHaveText("Changelog");
       await expect(page.locator('.header-nav [aria-current="page"]')).toHaveText("Changelog");

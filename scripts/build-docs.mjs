@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { escapeHtml, renderMarkdown } from "./markdown.mjs";
+import { escapeHtml } from "./markdown.mjs";
+import {renderRepositoryMarkdown, contentMarkup} from "./repository-markdown.mjs";
 import { renderSiteHeader } from "./site-header.mjs";
 
 const repository = "Catalex-app/Catalex";
@@ -91,24 +92,9 @@ export async function buildDocs(_root, output) {
 	);
 	for (const page of pages) {
 		const prefix = "../".repeat(page.directory.split("/").length);
-		function rewrite(href, image = false) {
-			if (href.startsWith("#")) return href;
-			const url = new URL(href, "https://docs.invalid/");
-			if (!["https:", "http:", "mailto:"].includes(url.protocol))
-				throw new Error(`Unsupported link in ${page.file}: ${href}`);
-			if (/^[a-z][a-z\d+.-]*:|^\/\//i.test(href)) return href;
-			const [filename, anchor] = href.split("#", 2);
-			const target = path.posix.normalize(
-				path.posix.join("docs", path.posix.dirname(page.file), filename),
-			);
-			const guide = pages.find((entry) => `docs/${entry.file}` === target);
-			if (guide && !image) {
-				const relative = path.posix.relative(page.directory, guide.directory);
-				return `${relative || "."}/${anchor ? `#${anchor}` : ""}`;
-			}
-			return `${image ? raw : github}${target}${anchor ? `#${anchor}` : ""}`;
-		}
-		const { body } = renderMarkdown(page.markdown, rewrite);
+		const config = {kind:"docs", ref, file:`docs/${page.file}`, directory:page.directory,
+      routes:Object.fromEntries(pages.map(entry => [`docs/${entry.file}`, entry.directory]))};
+    const {body} = renderRepositoryMarkdown(page.markdown, config);
 		const hrefTo = (entry) =>
 			`${path.posix.relative(page.directory, entry.directory) || "."}/`;
 		const navigation = sections
@@ -142,8 +128,8 @@ export async function buildDocs(_root, output) {
 <link rel="icon" href="${prefix}assets/favicon.png"/><link rel="stylesheet" href="${prefix}styles.css"/><link rel="stylesheet" href="${prefix}docs.css"/>
 </head><body class="docs-page"><a class="skip-link" href="#main">Skip to content</a>${header}
 <div class="docs-layout"><aside class="docs-sidebar"><a class="docs-label" href="${prefix}docs/">Documentation</a>${navigation}<a class="docs-contributing" href="${github}CONTRIBUTING.md">Contributing ↗</a></aside>
-<main id="main" class="docs-article">${body}<nav class="docs-pagination" aria-label="Page navigation">${footer}</nav><a class="docs-source" href="${github}docs/${page.file}">View this page on GitHub ↗</a></main></div>
-</body></html>\n`;
+<main id="main" class="docs-article">${contentMarkup(body, config)}<nav class="docs-pagination" aria-label="Page navigation">${footer}</nav><a class="docs-source" href="${github}docs/${page.file}">View this page on GitHub ↗</a></main></div>
+<script type="module" src="${prefix}docs-live.js"></script></body></html>\n`;
 		const directory = path.join(output, page.directory);
 		await mkdir(directory, { recursive: true });
 		await writeFile(path.join(directory, "index.html"), html);

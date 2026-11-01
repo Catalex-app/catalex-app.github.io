@@ -1,6 +1,6 @@
 import {test, expect} from '@playwright/test';
 
-for (const width of [1440, 390]) {
+for (const width of [1440]) {
   test(`header cat slides while navigation stays fixed at ${width}px`, async ({page}) => {
     await page.setViewportSize({width, height:950});
     await page.goto('./?playIntro=0#top');

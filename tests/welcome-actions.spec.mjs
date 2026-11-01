@@ -20,7 +20,8 @@ for (const [width,height,mode,motion] of [
     await expect(brand.locator(".catalex-mark > span")).toBeHidden();
     await expect(page.getByRole("link",{name:"Replay intro"})).toBeVisible();
     await expect(page.locator(".header-download")).toBeHidden();
-    await expect(page.locator(".terminal-actions a").first()).toBeVisible();
+    await expect(page.locator(".terminal-actions a").first()).toBeVisible({visible:width>760});
+    await expect(page.locator(".terminal-actions a").last()).toBeVisible();
     const headerBox=await page.locator(".site-header").boundingBox();
     expect((await page.locator(".welcome-views").boundingBox()).y).toBeGreaterThan(headerBox.y+headerBox.height);
     if(mode!=="preview") {
@@ -36,7 +37,7 @@ for (const [width,height,mode,motion] of [
     });
     await page.screenshot({path:`output/floating-welcome-${width}-${mode}.png`});
     await page.getByRole("button",{name:"Scroll down to learn more"}).dispatchEvent("click");
-    if(motion!=="reduce") {
+    if(motion!=="reduce" && width>760) {
       const frames=await page.evaluate(()=>{
         for(const a of document.getAnimations()){a.pause();a.currentTime=0;}
         const rect=el=>{const r=el.getBoundingClientRect();return {x:r.x,y:r.y,width:r.width,height:r.height}};
@@ -55,11 +56,17 @@ for (const [width,height,mode,motion] of [
     }
     await expect(page.locator("html")).toHaveAttribute("data-intro","complete");
     await expect(page.locator(".action-flight,.wordmark-flight,.intro-scene")).toHaveCount(0);
-    expect(await page.evaluate(()=>window.savedButtons.every(el=>el.parentElement.matches(".header-actions")) && document.querySelector(".site-header .catalex-mark")===window.savedBrand)).toBe(true);
-    expect(await brand.locator(".catalex-mark > span").evaluate(el=>el===window.savedWordmark)).toBe(true);
-    await expect(brand.locator(".catalex-mark > span")).toBeVisible();
+    if(width>760) {
+      expect(await page.evaluate(()=>window.savedButtons.every(el=>el.parentElement.matches(".header-actions")) && document.querySelector(".site-header .catalex-mark")===window.savedBrand)).toBe(true);
+      expect(await brand.locator(".catalex-mark > span").evaluate(el=>el===window.savedWordmark)).toBe(true);
+      await expect(brand.locator(".catalex-mark > span")).toBeVisible();
+    } else {
+      await expect(page.locator('.mobile-navigation summary')).toHaveText('Catalex');
+      expect(await page.evaluate(()=>window.savedButtons.every(el=>!el.isConnected))).toBe(true);
+    }
     await expect(page.getByRole("link",{name:"Replay intro"})).toBeHidden();
-    await expect(page.locator(".header-download")).toHaveAccessibleName("Beta download");
+    if(width>760) await expect(page.locator(".header-download")).toHaveAccessibleName("Beta download");
+    else await expect(page.locator(".header-download")).toBeHidden();
     await expect(page.locator(".header-download")).toHaveAttribute("href","./download/");
     await expect(page.locator(".header-github")).toHaveAccessibleName("GitHub");
     await expect(page.locator(".header-github")).toHaveAttribute("href","https://github.com/Catalex-app/Catalex");
@@ -82,7 +89,7 @@ for(const interruption of ["resize","reduced motion"]) {
     else await page.emulateMedia({reducedMotion:"reduce"});
     await expect(page.locator("html")).toHaveAttribute("data-intro","complete");
     await expect(page.locator(".action-flight,.wordmark-flight,.intro-scene")).toHaveCount(0);
-    await expect(page.locator(".header-download")).toBeVisible();
+    await expect(page.locator(".header-download")).toBeVisible({visible:interruption!=="resize"});
     await expect(page.locator(".header-github")).toBeVisible();
     expect(await page.locator("#main").evaluate(el=>el.inert)).toBe(false);
   });

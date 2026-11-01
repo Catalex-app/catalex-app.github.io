@@ -20,7 +20,8 @@ if (performance.getEntriesByType("navigation")[0]?.type === "reload" && location
 
 // #top (or the bare homepage) is Welcome; #main and section anchors are Main.
 // Return in place so the visible content can slide away without a document reload.
-document.querySelector(".site-header .brand")?.addEventListener("click", event => {
+document.querySelector(".site-header")?.addEventListener("click", event => {
+  if (!event.target.closest(".brand, .header-home")) return;
   if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || document.documentElement.dataset.intro !== "complete") return;
   event.preventDefault();
   entranceModule.then(({returnToWelcome}) => returnToWelcome(reducedMotion, {focus:event.detail === 0}));
@@ -67,6 +68,7 @@ function setupWelcomeReturnGesture() {
   let shown = false;
   let readyAt = 0;
   let fade;
+  const compact = matchMedia("(max-width: 760px)");
 
   function reset(immediate = false) {
     amount = 0;
@@ -118,6 +120,14 @@ function setupWelcomeReturnGesture() {
       reset();
       return;
     }
+    if (compact.matches) {
+      event.preventDefault();
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => reset(true), 300);
+      amount += -event.deltaY * unit;
+      if (amount >= 56) returnHome();
+      return;
+    }
     // Browser wheel events do not distinguish fingers from momentum. Do not
     // require an idle gap: a trackpad can keep streaming through the next swipe.
     // The reveal stage and subsequent distance threshold provide the boundary.
@@ -142,6 +152,32 @@ function setupWelcomeReturnGesture() {
     hint.style.setProperty("--scroll-progress", Math.min(1, amount / 260));
     if (amount >= 260) returnHome();
   }, {passive:false});
+  // A deliberate downward swipe at Main's top returns directly on phones.
+  let touchStart = null;
+  let touchEnd = null;
+  addEventListener("touchstart", event => {
+    touchStart = touchEnd = null;
+    if (!compact.matches || root.dataset.intro !== "complete" || scrollY > 2 || event.touches.length !== 1 ||
+        document.querySelector("dialog[open], .mobile-navigation[open]") || isNestedScroll(event.target) ||
+        event.target.closest("a,button,input,textarea,summary,details,.site-header")) return;
+    const touch = event.touches[0];
+    touchStart = touchEnd = {x:touch.clientX,y:touch.clientY};
+  }, {passive:true});
+  addEventListener("touchmove", event => {
+    if (!touchStart) return;
+    if (event.touches.length !== 1 || scrollY > 2) { touchStart = touchEnd = null; return; }
+    const touch = event.touches[0];
+    touchEnd = {x:touch.clientX,y:touch.clientY};
+    if (touchEnd.y-touchStart.y > 12 && touchEnd.y-touchStart.y > Math.abs(touchEnd.x-touchStart.x)*1.3 && event.cancelable) event.preventDefault();
+  }, {passive:false});
+  addEventListener("touchend", () => {
+    if (touchStart && touchEnd && compact.matches) {
+      const distance = touchEnd.y-touchStart.y;
+      if (distance >= 56 && distance > Math.abs(touchEnd.x-touchStart.x)*1.3) returnHome();
+    }
+    touchStart = touchEnd = null;
+  }, {passive:true});
+  addEventListener("touchcancel", () => { touchStart = touchEnd = null; }, {passive:true});
   hint.addEventListener("click", event => returnHome(event.detail === 0));
   addEventListener("scroll", () => { if (scrollY > 2) reset(); }, {passive:true});
   addEventListener("resize", () => reset(true));

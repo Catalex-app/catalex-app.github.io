@@ -1,6 +1,6 @@
 import {mkdir, readFile, writeFile} from "node:fs/promises";
 import path from "node:path";
-import {escapeHtml, renderMarkdown} from "./markdown.mjs";
+import {renderRepositoryMarkdown, contentMarkup, versionNavigation} from "./repository-markdown.mjs";
 import {renderSiteHeader} from "./site-header.mjs";
 
 export async function buildChangelog(_root, output) {
@@ -20,16 +20,9 @@ export async function buildChangelog(_root, output) {
     markdown = await response.text();
   }
   if (!/^# .+/m.test(markdown)) throw new Error("Missing title in Catalex CHANGELOG.md");
-  const {body, headings} = renderMarkdown(markdown, (href, image) => {
-    if (href.startsWith("#") || /^[a-z][a-z\d+.-]*:|^\/\//i.test(href)) return href;
-    return new URL(href, image ? raw : github).href;
-  }, heading => {
-    const label = heading.tokens.length === 1 ? heading.tokens[0].text : heading.text;
-    return heading.depth === 2 && /^\[?unreleased\]?$/i.test(label.trim());
-  });
-  const versions = headings.filter(heading => heading.depth === 2);
-  const navigation = versions.map(({id, text}) =>
-    `<a href="#${escapeHtml(id)}">${escapeHtml(text.replace(/^\[([^\]]+)\]/, "$1"))}</a>`).join("\n");
+  const config = {kind:"changelog", ref, file:"CHANGELOG.md", directory:"changelog"};
+  const {body, headings} = renderRepositoryMarkdown(markdown, config);
+  const navigation = versionNavigation(headings);
   const header = renderSiteHeader({page:"changelog", prefix:"../"});
   const html = `<!doctype html>
 <html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -37,8 +30,8 @@ export async function buildChangelog(_root, output) {
 <link rel="icon" href="../assets/favicon.png"/><link rel="stylesheet" href="../styles.css"/><link rel="stylesheet" href="../docs.css"/>
 </head><body class="docs-page changelog-page"><a class="skip-link" href="#main">Skip to content</a>${header}
 <div class="docs-layout"><aside class="docs-sidebar"><a class="docs-label" href="./">Changelog</a><nav aria-label="Versions">${navigation}</nav></aside>
-<main id="main" class="docs-article">${body}<a class="docs-source" href="${github}CHANGELOG.md">View this page on GitHub ↗</a></main></div>
-</body></html>\n`;
+<main id="main" class="docs-article">${contentMarkup(body, config)}<a class="docs-source" href="${github}CHANGELOG.md">View this page on GitHub ↗</a></main></div>
+<script type="module" src="../docs-live.js"></script></body></html>\n`;
   const directory = path.join(output, "changelog");
   await mkdir(directory, {recursive:true});
   await writeFile(path.join(directory, "index.html"), html);

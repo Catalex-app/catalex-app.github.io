@@ -42,10 +42,8 @@ for (const width of [390, 1280]) {
 				page.locator('.docs-sidebar [aria-current="page"]'),
 			).toHaveText(title);
 			await expect(page.locator(".site-header .header-docs")).toHaveCount(1);
-			const headerNav = page.getByRole("navigation", {
-				name: "Main navigation",
-			});
-			await expect(headerNav.getByRole("link")).toHaveText([
+			const headerNav = page.locator(".header-nav");
+			await expect(headerNav.locator("a")).toHaveText([
 				"Documentation",
 				"Changelog",
 			]);
@@ -58,10 +56,11 @@ for (const width of [390, 1280]) {
 						header = el.parentElement.getBoundingClientRect();
 					const brand = el.parentElement.querySelector('.brand').getBoundingClientRect();
 					const actions = el.parentElement.querySelector('.header-actions').getBoundingClientRect();
-					return nav.left >= header.left && nav.right <= header.right &&
-						(innerWidth <= 760
-							? Math.abs(nav.left - brand.left) < 1 && nav.top >= brand.bottom
-							: nav.left > brand.right && nav.right < actions.left);
+					if (innerWidth <= 760) {
+                        const menu = document.querySelector('.mobile-navigation summary').getBoundingClientRect();
+                        return getComputedStyle(el).display === 'none' && menu.left >= brand.right && menu.right < actions.left;
+                    }
+                    return nav.left >= header.left && nav.right <= header.right && nav.left > brand.right && nav.right < actions.left;
 				}),
 			).toBe(true);
 			await expect(page.locator(".docs-source")).toHaveAttribute(
