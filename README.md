@@ -1,127 +1,115 @@
 # Catalex website
 
-A small, static product website for Catalex. HTML, CSS, and JavaScript with
-actual app screenshots and a standalone highlights carousel. Local fonts, the existing
-cat artwork, neutral surfaces, and the app’s own controls. No analytics or live
-agent connection.
+A static product website for [Catalex](https://github.com/Catalex-app/Catalex),
+with a terminal-style introduction, an interactive source/split/preview example,
+app screenshots, a recorded agent demo, documentation, and a changelog.
+HTML, CSS, and JavaScript; local fonts and media; no analytics or live agent connection.
 
-## Local development
+## Development
 
-Node.js 22 or newer:
+Use Node.js 22 or newer:
 
 ```sh
-npm install
+npm ci
+npm run build
 npm run dev
 ```
 
-Open `http://127.0.0.1:4321`. Refresh after source edits.
-
-```sh
-npm run build
-npm run preview
-```
-
-The build checks local asset references and section anchors, then copies only
-public site files into `dist/`. Internal content briefs are not published.
+Open `http://127.0.0.1:4321`. The initial build fetches the public documentation
+and changelog. Refresh after source edits; rebuild when their Markdown changes.
+Use `npm run preview` to serve only the generated `dist/` directory.
 
 ## Verification
 
 ```sh
-npx playwright install chromium
+npx playwright install chromium webkit
+npm run test:docs
 npm run build
 npm test
 ```
 
-Playwright tests the built site under `/catalex.github.io/`, including local assets and anchors,
-carousel looping, keyboard operation, mobile widths, and
-reduced motion. Tests use ports 4322 and 4323 (built site and development-server checks). `npm run dev` uses 4321 by default.
+Browser checks cover desktop and mobile layouts, navigation, the introduction,
+scroll transitions, reduced motion, media playback, and documentation links.
+They test the production build under `/catalex.github.io/` on port 4322 and the
+source preview on port 4323. The development server uses port 4321.
 
-## Content and source
+## Project layout
 
-- `index.html`: short copy and semantic page structure.
-- `styles.css`: responsive styles and adapted app design details.
-- `app.js`: welcome sequence, carousel, and expanded highlights interactions.
-- `workspace-demo/`: thin fixture adapter around the actual Catalex renderer.
-- `assets/workspace/`: local screenshot-capture bundle; excluded from the published build.
-- `assets/`: cat artwork, local fonts, licenses, and actual app screenshots.
-- [Content handoff](docs/website/README.md): the original story and copy briefs.
-- [Design provenance](docs/design-provenance.md): what was reused and captured.
-- [Initial app/hosting review](docs/reviews/issue-311-website-brief.md).
+- `index.html`, `styles.css`, `app.js`, `typewriter.js`: homepage and interactions.
+- `download/index.html`: download page linking to public GitHub Releases.
+- `scripts/site-header.mjs`: the shared navigation header.
+- `scripts/build-docs.mjs`, `scripts/build-changelog.mjs`, `scripts/markdown.mjs`:
+  canonical Markdown import and rendering.
+- `docs.css`: documentation and changelog presentation.
+- `assets/`: published screenshots, video, artwork, fonts, and license notices.
+- `workspace-demo/` and `scripts/capture-*.mjs`: synthetic fixtures and local
+  capture tools for regenerating product media.
+- [Design provenance](docs/design-provenance.md): asset origins and capture instructions.
 
-The local capture workspace supports editing, source/PDF selection, comments, and draft
-review using the actual app components. It is no longer embedded or linked on the website. It uses browser fixture data, a precompiled
-PDF, and no live agent or filesystem. Reloading resets the sample. See the design
-provenance document for renderer rebuilding, screenshot capture, and dependency
-license details.
+The build publishes an explicit set of website files. Internal notes, capture
+source, task configuration, and the generated `assets/workspace/` renderer are
+not included. The renderer bundle is also ignored by Git; regenerate it locally
+when capturing new media.
 
-## Opening sequence
+## Documentation and changelog
 
-The homepage opens with the research/collaboration reaction typing onto a white
-screen, including its subscripts and Catalex label. The arrow shaft draws first,
-followed by its head. Its Catalex mark moves into the header as the navigation and page appear.
-The equation then disappears; the hero has the existing copy on the left and
-the original workspace capture on the right, without decorative backgrounds.
-Narrow screens stack the copy and capture.
+The source of truth is [Catalex-app/Catalex](https://github.com/Catalex-app/Catalex):
 
-Refreshing the homepage replays the sequence, including after scrolling down.
-Reduced motion, section links, and browser back/forward navigation skip it.
-Keyboard, pointer, or scroll input can skip it immediately. The page remains
-usable without JavaScript, with a timed fallback if the main script fails.
-Playwright covers the intermediate and final states, replay, interruption,
-reduced motion, and missing-script fallback.
+- `docs/navigation.json` defines the User guide and Development groups.
+- The referenced Markdown pages are rendered under `/docs/`.
+- Root `CHANGELOG.md` is rendered under `/changelog/`, with version anchors.
+  The Unreleased section is omitted. All versioned entries remain visible,
+  regardless of whether a build succeeded.
 
-### Printer opening trial
+The default revision is `main`. Set `CATALEX_DOCS_REF` to a branch, tag, or commit
+to build from a particular revision. The public sources are fetched at build
+time; readers do not need GitHub API requests or JavaScript to read them.
+Missing sources fail the build rather than publishing empty pages. Relative
+links are resolved to website documentation routes or the canonical repository.
 
-Open `http://127.0.0.1:4321/?intro=typewriter` for the optional printer-lit
-landing screen. The entire viewport is paper. The original math font displays
-Research_human + Collaboration_agent → Paper on one line, with Catalex above
-the arrow. The formula scales to fit narrow screens without wrapping.
+For a preview of unpublished documentation changes in a local app checkout:
 
-The opening starts in deep charcoal (#101012) with Research_human already printed and
-the head positioned at its right edge. The left-facing lamp turns on while the
-head stays still, revealing Research_human. The head then moves right and prints
-only the rest of the equation, revealing ink directly behind its left edge.
-The 3.2-second pass builds momentum gradually, cruises through the middle, and
-brakes over a longer distance into the parking position. The head moves
-continuously through the text without per-letter stops. A rounded black rail runs above the head, connected through
-a vertical hanger to form a T-shaped assembly. The head only moves horizontally
-and finishes in a reserved parking space to the right of the formula. The cone keeps a fixed size and angle as it moves, with radial distance falloff.
-At the final parking position its faint end nearly reaches the left screen edge. The whole
-paper surface then brightens. Beta,
-GitHub, and the bottom scroll prompt are already drawn underneath the darkness;
-the light reveals them without a separate opacity animation.
+```sh
+CATALEX_DOCS_DIR=/absolute/path/to/Catalex/docs npm run build
+npm run dev
+```
 
-Downward scroll accumulates to 260 CSS pixels, then slides the landing screen up
-to the existing homepage. Reverse input subtracts from the total; scrolling during
-printing does not count. Wheel line/page modes and touch swipes are normalized.
-The prompt can also be activated directly, and Page Down/Space work from the
-landing screen. Download and GitHub remain normal links. Reduced motion shows
-the completed light surface immediately and skips the slide. Refresh replays it.
-The regular homepage remains available without the query parameter.
+With that override, the changelog is read from `../CHANGELOG.md` alongside the
+docs directory. `CATALEX_CHANGELOG_FILE` can override the changelog separately.
+Leave both unset for normal public GitHub builds. The already-running development
+server serves newly generated pages immediately after a browser refresh.
 
-`typewriter.js` is loaded only for this trial. The full-surface texture, rounded
-rail, and satin-metal printer head use original SVG artwork in
-`assets/typewriter-{paper,intro,head}.svg`. No Platen assets are bundled.
+## Homepage behavior
 
-## Publishing later
+The first visit plays the silent introduction once per browser storage profile.
+Later visits open Welcome; Replay intro plays it again without resetting that flag.
+`?playIntro=0#top` skips it for local visual work, and `?playIntro=1` requests a replay.
 
-The repository remains private during development. Nothing deploys on push.
-When ready, configure Settings → Pages → GitHub Actions and manually run the
-“Publish website” workflow. It tests the built site before deploying only `dist/`.
-The workflow has not been run as part of local development.
+Welcome has source, split, and preview modes. Scrolling down enters `#main`;
+refreshing Main preserves that screen and its scroll position. The cat slides
+left while the formula wordmark and download/GitHub buttons join the shared header.
+Clicking Catalex returns to Welcome. At Main's top, upward scrolling reveals a
+return indicator; continued scrolling fills it. Partial progress expires after
+three seconds of inactivity. Reduced motion skips the animated transitions.
 
-Because this repository belongs to `RicercarG`, its default project URL would be
-`https://ricercarg.github.io/catalex.github.io/`. Naming the repository
-`catalex.github.io` alone does not create a domain at that address. Use a custom
-domain if desired; the site uses relative asset links for either deployment.
+The main demo is a silent, scripted recording of the app using synthetic data.
+It loops while visible, and its still frame remains available when loading or
+playback fails, Save Data is enabled, or reduced motion is requested. The first
+highlight uses a screenshot. The review diagram plays once and has a replay button.
 
-Add Download or Source actions only after their public destinations are ready.
-Do not expose links to private releases as public downloads.
+## Publishing
 
-## Standalone highlights
+Publishing is manual; pushing does not deploy the site. Configure the repository's
+**Settings → Pages → GitHub Actions**, then run **Publish website**. The workflow
+fetches the chosen documentation revision, builds, tests, and deploys only `dist/`.
+Push changes to canonical documentation before running the website workflow.
 
-The page now ends after “Highlights at a glance” and the footer. Eight cards cover
-the editor, project Git, agent context, review, inline comments, compiling, skills,
-and Git history. Cards have no links. The interactive tour and lower copy sections
-were removed; philosophy content is reserved for a later pass. The renderer stays
-available locally for capturing authentic app visuals but is excluded from `dist/`.
+Without a custom domain, the project repository `Catalex-app/catalex.github.io`
+uses `https://catalex-app.github.io/catalex.github.io/`. Its name does not assign
+`https://catalex.github.io/`. Relative routes work at the domain root or project path.
+
+Keep local `.env` files, signing credentials, task routing, and generated capture
+output untracked. Example environment files may be committed without secrets.
+Ignoring a file does not erase earlier commits; review repository history before
+changing visibility. Website source changes must be committed and pushed before
+running the publishing workflow.

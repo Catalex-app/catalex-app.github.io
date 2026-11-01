@@ -4,3 +4,25 @@ test-results/
 playwright-report/
 output/
 .DS_Store
+
+# Local task routing, internal notes, and generated capture renderer.
+.githubissues.json
+design-qa.md
+docs/design-checkpoints.md
+docs/verification.md
+docs/reviews/
+docs/website/
+assets/workspace/
+
+# Local environment and signing credentials. Keep example configurations public.
+.env
+.env.*
+!.env.example
+!.env.*.example
+.release-env.sh
+*.pem
+*.key
+*.p12
+*.pfx
+*.keychain
+*.keychain-db

@@ -1,137 +1,273 @@
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+const initializedDemoVideos = new WeakSet();
 
-if (new URLSearchParams(location.search).get("intro") === "typewriter") {
-  import("./typewriter.js").then(({setupTypewriterEntrance}) => setupTypewriterEntrance(reducedMotion)).catch(setupHeroEntrance);
-} else {
-  setupHeroEntrance();
+// WebKit can prefer the #main anchor over native scroll restoration on reload.
+// Keep the current offset on this history entry, never as a site-wide preference.
+addEventListener("pagehide", () => {
+  if (location.hash && location.hash !== "#top" && document.documentElement.dataset.intro === "complete") {
+    history.replaceState({...history.state, catalexMainScroll: scrollY}, "");
+  }
+});
+const savedMainScroll = history.state?.catalexMainScroll;
+if (performance.getEntriesByType("navigation")[0]?.type === "reload" && location.hash && location.hash !== "#top" && Number.isFinite(savedMainScroll)) {
+  addEventListener("pageshow", async () => {
+    // Restore after entry setup removes Welcome-only copy and fonts settle.
+    await entranceReady;
+    await document.fonts.ready;
+    requestAnimationFrame(() => scrollTo({top:savedMainScroll, left:0, behavior:"instant"}));
+  }, {once:true});
 }
+
+// #top (or the bare homepage) is Welcome; #main and section anchors are Main.
+// Return in place so the visible content can slide away without a document reload.
+document.querySelector(".site-header .brand")?.addEventListener("click", event => {
+  if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || document.documentElement.dataset.intro !== "complete") return;
+  event.preventDefault();
+  entranceModule.then(({returnToWelcome}) => returnToWelcome(reducedMotion, {focus:event.detail === 0}));
+});
+addEventListener("hashchange", () => {
+  if ((!location.hash || location.hash === "#top") && document.documentElement.dataset.intro === "complete") {
+    entranceModule.then(({returnToWelcome}) => returnToWelcome(reducedMotion, {pushHistory:false}));
+  }
+});
+addEventListener("pageshow", event => {
+  if (event.persisted && (!location.hash || location.hash === "#top") && document.documentElement.dataset.intro === "complete") {
+    location.reload();
+  }
+});
+
+const entranceModule = import("./typewriter.js");
+const entranceReady = entranceModule
+  .then(({setupTypewriterEntrance}) => setupTypewriterEntrance(reducedMotion))
+  .catch(() => {
+    // A missing Intro must leave the ordinary homepage usable.
+    clearTimeout(window.catalexIntroFallback);
+    document.documentElement.classList.remove("intro-pending","typewriter-pending","welcome-preview","welcome-returning");
+    document.documentElement.dataset.intro = "complete";
+    document.querySelector(".intro-scene")?.remove();
+    if (window.catalexIntroScrollRestoration) history.scrollRestoration = window.catalexIntroScrollRestoration;
+  });
+setupDemoVideo(document.querySelector(".hero-demo-video"));
 setupCarousel();
 setupHighlightsOverlay();
+setupWorkflowAnimation();
+setupWelcomeReturnGesture();
 
-function setupHeroEntrance() {
+function setupWelcomeReturnGesture() {
   const root = document.documentElement;
-  const scene = document.querySelector(".intro-scene");
-  const animations = [];
-  const controller = new AbortController();
-  let finished = false;
-  const finish = () => {
-    if (finished) return;
-    finished = true;
-    clearTimeout(window.catalexIntroFallback);
-    controller.abort();
-    root.classList.remove("intro-pending");
-    root.dataset.intro = "complete";
-    if (window.catalexIntroScrollRestoration) {
-      history.scrollRestoration = window.catalexIntroScrollRestoration;
+  const header = document.querySelector(".site-header");
+  const hint = document.createElement("button");
+  hint.type = "button";
+  hint.className = "terminal-scroll main-return-scroll";
+  hint.innerHTML = 'Keep scrolling to return<span aria-hidden="true"></span>';
+  hint.hidden = true;
+  document.body.append(hint);
+  let amount = 0;
+  let resetTimer;
+  let shown = false;
+  let readyAt = 0;
+  let fade;
+
+  function reset(immediate = false) {
+    amount = 0;
+    clearTimeout(resetTimer);
+    if (immediate || reducedMotion.matches) {
+      shown = false;
+      fade?.cancel();
+      hint.hidden = true;
+      hint.style.setProperty("--scroll-progress", "0");
+      return;
     }
-    scene?.remove();
+    if (!shown) return;
+    shown = false;
+    const opacity = getComputedStyle(hint).opacity;
+    fade?.cancel();
+    fade = hint.animate([{opacity}, {opacity:0}], {duration:180, easing:"ease-out", fill:"both"});
+    fade.finished.then(() => {
+      if (!shown) hint.hidden = true;
+    }).catch(() => {});
+  }
+
+  function returnHome(focus = false) {
+    reset(true);
+    entranceModule.then(({returnToWelcome}) => returnToWelcome(reducedMotion, {focus}));
+  }
+
+  function isNestedScroll(target) {
+    for (let el = target instanceof Element ? target : null; el && el !== document.body; el = el.parentElement) {
+      if (el.matches('dialog, input, textarea, select, [contenteditable="true"]')) return true;
+      if (el.scrollHeight > el.clientHeight && /auto|scroll/.test(getComputedStyle(el).overflowY)) return true;
+    }
+    return false;
+  }
+
+  addEventListener("wheel", event => {
+    const now = performance.now();
+    if (root.dataset.intro !== "complete" || scrollY > 2 || event.ctrlKey || event.metaKey ||
+        document.querySelector("dialog[open]") || isNestedScroll(event.target)) {
+      reset();
+      return;
+    }
+    // Trackpads can begin with sideways/zero samples and interleave them with
+    // vertical input. Ignore those samples without cancelling the prompt.
+    if (event.deltaY === 0 || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+    const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? innerHeight : 1;
+    if (event.deltaY > 0) {
+      // Subpixel direction jitter should not erase an upward gesture.
+      if (event.deltaY * unit <= 2) return;
+      reset();
+      return;
+    }
+    // Browser wheel events do not distinguish fingers from momentum. Do not
+    // require an idle gap: a trackpad can keep streaming through the next swipe.
+    // The reveal stage and subsequent distance threshold provide the boundary.
+    event.preventDefault();
+    clearTimeout(resetTimer);
+    resetTimer = setTimeout(() => reset(), 3000);
+    if (!shown) {
+      const opacity = hint.hidden ? 0 : getComputedStyle(hint).opacity;
+      fade?.cancel();
+      shown = true;
+      hint.style.setProperty("--return-top", `${header.getBoundingClientRect().bottom + 8}px`);
+      hint.style.setProperty("--scroll-progress", "0");
+      hint.hidden = false;
+      const duration = reducedMotion.matches ? 0 : 180;
+      readyAt = now + 180;
+      fade = hint.animate([{opacity}, {opacity:1}], {duration, easing:"ease-out", fill:"both"});
+      // Stage one only reveals the prompt. Count subsequent input once visible.
+      return;
+    }
+    if (now < readyAt) return;
+    amount += Math.min(80, -event.deltaY * unit);
+    hint.style.setProperty("--scroll-progress", Math.min(1, amount / 260));
+    if (amount >= 260) returnHome();
+  }, {passive:false});
+  hint.addEventListener("click", event => returnHome(event.detail === 0));
+  addEventListener("scroll", () => { if (scrollY > 2) reset(); }, {passive:true});
+  addEventListener("resize", () => reset(true));
+  addEventListener("pagehide", () => reset(true));
+  new MutationObserver(() => reset(true)).observe(root, {attributes:true, attributeFilter:["data-intro"]});
+}
+
+function setupWorkflowAnimation() {
+  const figure = document.querySelector(".review-figure");
+  if (!figure) return;
+  const replay = figure.querySelector(".flow-replay");
+  const paths = [...figure.querySelectorAll(".flow-lines path")];
+  const details = [...figure.querySelectorAll(".flow-node, .flow-label, .flow-agent-step, .review-gate")];
+  let animations = [];
+  let run = 0;
+  let inView = false;
+  let restoreFocus = false;
+
+  function prepare() {
+    replay.hidden = true;
+    for (const path of paths) {
+      const length = path.getTotalLength();
+      path.style.strokeDasharray = `${length}`;
+      path.style.strokeDashoffset = `${length}`;
+    }
+    for (const detail of details) detail.style.opacity = "0";
+  }
+
+  function finish() {
+    run++;
     for (const animation of animations) animation.cancel();
-  };
-  if (!scene || !root.classList.contains("intro-pending") || reducedMotion.matches) {
-    finish();
-    return;
-  }
-  scrollTo({top: 0, left: 0, behavior: "instant"});
-
-  const options = {signal: controller.signal};
-  // Navigation and changes to the viewport always take precedence over the intro.
-  document.addEventListener("keydown", finish, options);
-  document.addEventListener("focusin", finish, options);
-  scene.addEventListener("pointerdown", finish, options);
-  for (const event of ["wheel", "touchstart", "resize", "pagehide", "hashchange"]) {
-    addEventListener(event, finish, {...options, passive: true});
-  }
-  // Some browsers restore a refresh's old scroll position after parsing. Keep
-  // the welcome at the top; deliberate wheel/touch/key input still skips it.
-  const keepAtTop = () => {
-    if (scrollY > 0) scrollTo({top: 0, left: 0, behavior: "instant"});
-  };
-  addEventListener("scroll", keepAtTop, {...options, passive: true});
-  addEventListener("load", keepAtTop, options);
-  document.addEventListener("visibilitychange", () => { if (document.hidden) finish(); }, options);
-  reducedMotion.addEventListener("change", () => { if (reducedMotion.matches) finish(); }, options);
-
-  function animate(element, frames, timing) {
-    const animation = element.animate(frames, {
-      duration: 380, easing: "cubic-bezier(.22, 1, .36, 1)", fill: "both", ...timing,
-    });
-    // Cancellation is expected when a visitor skips, resizes, or navigates away.
-    animation.finished.catch(() => {});
-    animations.push(animation);
-    return animation;
+    animations = [];
+    for (const path of paths) {
+      path.style.removeProperty("stroke-dasharray");
+      path.style.removeProperty("stroke-dashoffset");
+    }
+    for (const detail of details) detail.style.removeProperty("opacity");
+    figure.dataset.flowState = "complete";
+    replay.hidden = reducedMotion.matches;
+    if (restoreFocus && !replay.hidden) replay.focus({preventScroll: true});
+    restoreFocus = false;
   }
 
-  async function play() {
-    await document.fonts.ready;
-    if (finished || !root.classList.contains("intro-pending")) return finish();
-    keepAtTop();
-    root.dataset.intro = "forming";
-    function type(selector, delay) {
-      const element = scene.querySelector(selector);
-      const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-      const nodes = [];
-      while (walker.nextNode()) nodes.push(walker.currentNode);
-      let index = 0;
-      // Keep the final layout reserved, including the original subscript markup.
-      // Discrete character reveals work with proportional text without clipping glyphs.
-      for (const node of nodes) {
-        const fragment = document.createDocumentFragment();
-        for (const character of node.textContent) {
-          const letter = document.createElement("span");
-          letter.className = "intro-letter";
-          letter.textContent = character;
-          fragment.append(letter);
-          animate(letter, [{opacity: 1}, {opacity: 1}], {
-            delay: delay + index++ * 38, duration: 1, easing: "linear", fill: "forwards",
-          });
-        }
-        node.replaceWith(fragment);
+  function play() {
+    if (reducedMotion.matches) return finish();
+    const currentRun = ++run;
+    for (const animation of animations) animation.cancel();
+    animations = [];
+    restoreFocus = document.activeElement === replay;
+    prepare();
+    figure.dataset.flowState = "playing";
+    const animate = (element, frames, delay, duration, easing = "linear") => {
+      const animation = element.animate(frames, {delay, duration, easing, fill: "both"});
+      animations.push(animation);
+    };
+    const motionCurve = "cubic-bezier(.4, 0, .2, 1)";
+    const draw = (selector, stops) => {
+      const path = figure.querySelector(selector);
+      const length = path.getTotalLength();
+      const duration = stops.at(-1)[0];
+      animate(path, stops.map(([time, distance]) => ({
+        offset: time / duration,
+        strokeDashoffset: length - distance,
+        easing: motionCurve,
+      })), 0, duration);
+    };
+    const reveal = (selector, delay) => {
+      for (const element of figure.querySelectorAll(selector)) {
+        animate(element, [{opacity: 0}, {opacity: 1}], delay, 240, "ease-out");
       }
-      element.style.opacity = "1";
-    }
-    type(".reactant", 80);
-    type(".operator", 600);
-    type(".reactant:nth-child(3)", 700);
-    type(".catalyst-brand > span", 1420);
-    scene.querySelector(".catalyst-brand").style.opacity = "1";
-    animate(scene.querySelector(".catalyst-cat"), [{opacity: 0}, {opacity: 1}], {
-      delay: 1420, duration: 180,
-    });
-    animate(scene.querySelector(".reaction-shaft"), [
-      {strokeDashoffset: "1"}, {strokeDashoffset: "0"},
-    ], {delay: 1700, duration: 440, easing: "linear"});
-    animate(scene.querySelector(".reaction-head"), [
-      {strokeDashoffset: "1"}, {strokeDashoffset: "0"},
-    ], {delay: 2140, duration: 160, easing: "linear"});
-    type(".product", 2320);
-    // Leave one short beat to read the completed equation before the handoff.
-    await animate(scene, [{opacity: 1}, {opacity: 1}], {duration: 2820}).finished;
-    if (finished || !root.classList.contains("intro-pending")) return finish();
-
-    const header = document.querySelector(".site-header");
-    const brand = header.querySelector(".brand");
-    const source = scene.querySelector(".catalyst-brand");
-    const from = source.getBoundingClientRect();
-    const to = brand.getBoundingClientRect();
-    source.style.visibility = "hidden";
-    root.dataset.intro = "docking";
-    // Move the real header mark from the equation's measured position to its home.
-    const flight = animate(brand, [
-      {opacity: 1, transform: `translate(${from.left - to.left}px, ${from.top - to.top}px) scale(${from.height / to.height})`},
-      {opacity: 1, transform: "translate(0, 0) scale(1)"},
-    ], {duration: 820, easing: "cubic-bezier(.65, 0, .2, 1)"});
-    animate(scene, [{opacity: 1}, {opacity: 0}], {duration: 300});
-    animate(header, [{borderColor: "transparent"}, {borderColor: "#e4e4e7"}], {duration: 500});
-    for (const control of header.querySelectorAll(":scope > :not(.brand)")) {
-      animate(control, [{opacity: 0}, {opacity: 1}], {delay: 180, duration: 500});
-    }
-    const content = animate(document.querySelector("#main"), [
-      {opacity: 0, transform: "translateY(14px)"}, {opacity: 1, transform: "translateY(0)"},
-    ], {delay: 420, duration: 620});
-    await Promise.all([flight.finished, content.finished]);
-    finish();
+    };
+    // Repeated distances create real pauses at the nodes. Each moving
+    // segment accelerates and settles independently, keeping labels readable.
+    const author = figure.querySelector(".author-line");
+    draw(".author-line", [[0, 0], [300, 0], [650, 30], [1050, 30],
+      [1950, 200], [2450, 200], [3200, author.getTotalLength()]]);
+    reveal(".flow-start, .flow-project", 650);
+    reveal(".flow-edit, .flow-author", 1950);
+    const draft = figure.querySelector(".draft-line");
+    const draftNodeDistance = draft.getTotalLength() - 118;
+    draw(".draft-line", [[0, 0], [1050, 0], [2050, draftNodeDistance],
+      [2650, draftNodeDistance], [3300, draft.getTotalLength()]]);
+    reveal(".draft-node, .flow-agent-step", 2050);
+    reveal(".review-gate", 3300);
+    // Read the white approval card, confirm in green, then release the edits.
+    animate(figure.querySelector(".review-gate"), [
+      {backgroundColor: "#fff", borderColor: "#fff", color: "#18181b"},
+      {backgroundColor: "#16804c", borderColor: "#16804c", color: "#fff"},
+    ], 4200, 360, motionCurve);
+    const accepted = figure.querySelector(".accepted-line");
+    const acceptedNodeDistance = accepted.getTotalLength() - 58;
+    draw(".accepted-line", [[0, 0], [4650, 0], [5500, acceptedNodeDistance],
+      [5800, acceptedNodeDistance], [6200, accepted.getTotalLength()]]);
+    reveal(".accepted-node, .flow-accepted", 5500);
+    Promise.all(animations.map(animation => animation.finished)).then(() => {
+      if (run === currentRun) finish();
+    }, () => {});
+    updatePlayback();
   }
-  play().catch(finish);
+
+  function updatePlayback() {
+    const visible = inView && !document.hidden && document.documentElement.dataset.intro === "complete";
+    if (figure.dataset.flowState === "pending" && visible) play();
+    else if (figure.dataset.flowState === "playing") {
+      for (const animation of animations) visible ? animation.play() : animation.pause();
+    }
+  }
+
+  if (reducedMotion.matches || !("IntersectionObserver" in window)) {
+    finish();
+  } else {
+    prepare();
+    figure.dataset.flowState = "pending";
+  }
+  const observer = "IntersectionObserver" in window ? new IntersectionObserver(entries => {
+    inView = entries[0].intersectionRatio >= .6;
+    updatePlayback();
+  }, {threshold: [0, .6]}) : null;
+  observer?.observe(figure);
+  new MutationObserver(updatePlayback).observe(document.documentElement, {attributes: true, attributeFilter: ["data-intro"]});
+  document.addEventListener("visibilitychange", updatePlayback);
+  reducedMotion.addEventListener("change", () => {
+    if (reducedMotion.matches) finish();
+    else replay.hidden = false;
+  });
+  replay.addEventListener("click", play);
 }
 
 function setupCarousel() {
@@ -496,3 +632,68 @@ function setupScrollReveals() {
   });
 }
 setupScrollReveals();
+
+// Both recordings keep a complete still until actual playback starts.
+function setupDemoVideo(video) {
+  if (!video || initializedDemoVideos.has(video)) return;
+  initializedDemoVideos.add(video);
+  const frame = video.closest(".hero-window, .card-visual");
+  const dialog = video.closest("dialog");
+  const connection = navigator.connection;
+  let inView = false;
+  let loaded = false;
+  let failed = false;
+  let loadTimer;
+  const blockedReason = () => reducedMotion.matches ? "reduced-motion" : connection?.saveData ? "save-data" : !inView ? "offscreen" : document.hidden ? "hidden-tab" : document.documentElement.dataset.intro !== "complete" ? "welcome" : dialog ? (!dialog.open || frame.getAttribute("aria-hidden") === "true" ? "inactive" : null) : document.documentElement.classList.contains("highlights-open") ? "covered" : null;
+  const eligible = () => !failed && !blockedReason();
+  function fallback(reason = "load-error", detail = "") {
+    frame.dataset.demoState = reason;
+    if (detail) frame.dataset.demoError = detail;
+    failed = true;
+    clearTimeout(loadTimer);
+    video.pause();
+    frame.classList.remove("is-playing");
+    video.removeAttribute("src");
+    video.load();
+  }
+  function update() {
+    if (!eligible()) {
+      if (!failed) frame.dataset.demoState = blockedReason();
+      video.pause();
+      if (reducedMotion.matches || connection?.saveData) frame.classList.remove("is-playing");
+      return;
+    }
+    if (!loaded) {
+      loaded = true;
+      video.muted = true;
+      frame.dataset.demoState = "loading";
+      video.preload = "auto";
+      video.src = video.dataset.src;
+      // Slow or unavailable video leaves a still, without a loading interface.
+      loadTimer = setTimeout(() => fallback("load-timeout"), 5000);
+    }
+    video.play().catch(error => { if (error.name !== "AbortError") fallback(video.error || error.name === "NotSupportedError" ? "load-error" : "play-blocked", `${error.name}: ${error.message}`); });
+  }
+  video.addEventListener("playing", () => {
+    if (!eligible()) { video.pause(); return; }
+    clearTimeout(loadTimer);
+    frame.dataset.demoState = "playing";
+    frame.classList.add("is-playing");
+  });
+  video.addEventListener("loadeddata", () => { clearTimeout(loadTimer); update(); });
+  video.addEventListener("error", () => { if (!failed) fallback("load-error", `${video.error?.code}: ${video.error?.message}`); });
+  const threshold = .15;
+  new IntersectionObserver(entries => {
+    inView = entries[0].isIntersecting && entries[0].intersectionRatio >= threshold;
+    update();
+  }, {threshold}).observe(video);
+  new MutationObserver(update).observe(document.documentElement, {attributes: true, attributeFilter: ["data-intro", "class"]});
+  if (dialog) {
+    new MutationObserver(update).observe(dialog, {attributes: true, attributeFilter: ["open"]});
+    new MutationObserver(update).observe(frame, {attributes: true, attributeFilter: ["aria-hidden"]});
+  }
+  document.addEventListener("visibilitychange", update);
+  reducedMotion.addEventListener("change", update);
+  connection?.addEventListener?.("change", update);
+  update();
+}

@@ -1,0 +1,219 @@
+/* Documentation uses the shared typography, header, colors, and buttons. */
+.docs-layout {
+	width: min(1100px, calc(100% - 64px));
+	margin: 64px auto 96px;
+	display: grid;
+	grid-template-columns: 210px minmax(0, 720px);
+	gap: 68px;
+	align-items: start;
+}
+.docs-sidebar {
+	position: sticky;
+	top: 112px;
+	font-size: 14px;
+}
+.docs-label {
+	display: block;
+	margin: 0 12px 16px;
+	color: var(--foreground);
+	font-weight: 600;
+}
+.docs-sidebar nav {
+	display: grid;
+	gap: 4px;
+}
+.docs-nav-group + .docs-nav-group {
+	margin-top: 24px;
+}
+.docs-nav-title {
+	margin: 0 12px 4px;
+	font-size: 12px;
+	font-weight: 500;
+	color: var(--muted-foreground);
+}
+@media (max-width: 680px) {
+	.docs-nav-title {
+		grid-column: 1 / -1;
+		margin-left: 8px;
+	}
+}
+.docs-sidebar nav a {
+	padding: 8px 12px;
+	border-radius: 8px;
+	color: var(--muted-foreground);
+}
+.docs-sidebar nav a:hover,
+.docs-sidebar nav [aria-current="page"] {
+	color: var(--foreground);
+	background: var(--muted);
+}
+.docs-sidebar nav [aria-current="page"] {
+	font-weight: 500;
+}
+.docs-contributing {
+	display: inline-block;
+	margin: 24px 12px 0;
+	color: var(--muted-foreground);
+}
+.docs-article {
+	min-width: 0;
+	font-size: 16px;
+	line-height: 1.8;
+}
+.docs-article h1 {
+	font-size: clamp(32px, 4vw, 44px);
+	margin: 0 0 24px;
+}
+.docs-article h2 {
+	font-size: 24px;
+	margin: 40px 0 16px;
+	letter-spacing: -0.035em;
+}
+.docs-article h3 {
+	font-size: 19px;
+	margin: 28px 0 12px;
+}
+.docs-article :is(h1, h2, h3) {
+	scroll-margin-top: 112px;
+}
+.docs-article p {
+	margin: 0 0 18px;
+}
+.docs-article strong {
+	color: var(--foreground);
+	font-weight: 500;
+}
+.docs-article :is(ul, ol) {
+	padding-left: 24px;
+	margin: 0 0 20px;
+	color: var(--muted-foreground);
+}
+.docs-article li + li {
+	margin-top: 8px;
+}
+.docs-article a:not(.docs-pagination a, .docs-source) {
+	color: var(--foreground);
+	text-decoration: underline;
+	text-decoration-color: #d4d4d8;
+	text-underline-offset: 4px;
+}
+.docs-article a:hover {
+	text-decoration-color: currentColor;
+}
+.docs-article code {
+	font:
+		0.86em / 1.7 ui-monospace,
+		SFMono-Regular,
+		Menlo,
+		monospace;
+	overflow-wrap: anywhere;
+}
+.docs-article :not(pre) > code {
+	background: var(--muted);
+	border-radius: 4px;
+	padding: 2px 5px;
+}
+.docs-article pre {
+	padding: 18px 20px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--muted);
+	overflow-x: auto;
+	margin: 0 0 22px;
+}
+.docs-article pre code {
+	overflow-wrap: normal;
+	white-space: pre;
+}
+.docs-article table {
+	display: block;
+	max-width: 100%;
+	overflow-x: auto;
+	border-collapse: collapse;
+	font-size: 14px;
+	margin: 0 0 24px;
+}
+.docs-article :is(th, td) {
+	text-align: left;
+	padding: 12px 14px;
+	border-bottom: 1px solid var(--border);
+	vertical-align: top;
+}
+.docs-article th {
+	font-weight: 500;
+}
+.docs-pagination {
+	display: flex;
+	justify-content: space-between;
+	gap: 24px;
+	margin-top: 48px;
+	padding-top: 24px;
+	border-top: 1px solid var(--border);
+	font-size: 14px;
+}
+.docs-pagination a {
+	max-width: 48%;
+}
+.docs-pagination a[rel="next"] {
+	margin-left: auto;
+	text-align: right;
+}
+.docs-pagination span {
+	display: block;
+	font-size: 12px;
+	color: var(--muted-foreground);
+}
+.docs-source {
+	display: inline-block;
+	margin-top: 36px;
+	font-size: 12px;
+	color: var(--muted-foreground);
+}
+.changelog-page .docs-sidebar {
+	max-height: calc(100svh - 144px);
+	overflow-y: auto;
+}
+.changelog-page .docs-sidebar a { overflow-wrap: anywhere; }
+.changelog-page .docs-article h2 {
+	border-top: 1px solid var(--border);
+	padding-top: 28px;
+}
+@media (max-width: 900px) {
+	.docs-layout {
+		gap: 32px;
+		grid-template-columns: 180px minmax(0, 1fr);
+	}
+}
+@media (max-width: 680px) {
+	.changelog-page .docs-sidebar { max-height: 240px; }
+	.docs-layout {
+		width: calc(100% - 40px);
+		display: block;
+		margin-top: 32px;
+	}
+	.docs-sidebar {
+		position: static;
+		border-bottom: 1px solid var(--border);
+		padding-bottom: 22px;
+		margin-bottom: 32px;
+	}
+	.docs-label {
+		margin-left: 0;
+		margin-bottom: 10px;
+	}
+	.docs-sidebar nav {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		font-size: 13px;
+		gap: 2px;
+	}
+	.docs-sidebar nav a {
+		padding: 8px;
+	}
+	.docs-contributing {
+		margin: 12px 8px 0;
+		font-size: 12px;
+	}
+	.docs-article {
+		font-size: 15px;
+	}
+}

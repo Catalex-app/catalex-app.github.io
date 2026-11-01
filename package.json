@@ -8,12 +8,14 @@
     "dev": "node scripts/serve.mjs",
     "build": "node scripts/build.mjs",
     "preview": "node scripts/serve.mjs --dist",
+    "test:docs": "node --test scripts/build-docs.test.mjs scripts/build-changelog.test.mjs",
     "test": "playwright test"
   },
   "engines": {
     "node": ">=22"
   },
   "devDependencies": {
-    "@playwright/test": "1.59.1"
+    "@playwright/test": "1.59.1",
+    "marked": "18.1.2"
   }
 }

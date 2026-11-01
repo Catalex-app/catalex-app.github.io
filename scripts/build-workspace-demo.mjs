@@ -1,5 +1,5 @@
-// Rebuild only when refreshing app components. Normal website builds use the
-// checked-in static bundle and do not need access to the private app repository.
+// Rebuild the local capture renderer when refreshing screenshots or the demo.
+// Normal website builds use checked-in media and do not need the private app repo.
 import { createRequire } from "node:module";
 import {
 	cp,

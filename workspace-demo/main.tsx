@@ -17,10 +17,14 @@ import { browserHarness } from "@/lib/desktop/bridge";
 import { compileLatex } from "@/lib/latex-compiler";
 import "@/styles/globals.css";
 import "./website.css";
+import {prepareHeroDemo} from "./hero-demo";
+import {prepareEditorDemo} from "./editor-demo";
 
 const parameters = new URLSearchParams(location.search);
 const review = parameters.get("scene") === "review";
 const git = parameters.get("scene") === "git";
+const hero = parameters.get("scene") === "hero";
+const editorDemo = parameters.get("scene") === "editor";
 // The existing fixture selects a local LaTeX paper with these flags.
 parameters.set("debug", "comment-workspace");
 parameters.set("pdf", "");
@@ -88,6 +92,8 @@ function App() {
 				}
 				return invoke(command, args, options);
 			};
+			if (hero) await prepareHeroDemo();
+			if (editorDemo) await prepareEditorDemo();
 			setReady(true);
 			requestAnimationFrame(() =>
 				requestAnimationFrame(() => {

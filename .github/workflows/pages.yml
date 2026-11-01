@@ -3,6 +3,12 @@ name: Publish website
 # Run manually when the repository and public links are ready.
 on:
   workflow_dispatch:
+    inputs:
+      docs_ref:
+        description: "Catalex branch, tag, or commit for documentation and changelog"
+        default: main
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -25,8 +31,11 @@ jobs:
         with:
           node-version: 24
       - run: npm ci
+      - run: npm run test:docs
       - run: npm run build
-      - run: npx playwright install --with-deps chromium
+        env:
+          CATALEX_DOCS_REF: ${{ inputs.docs_ref }}
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm test
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4

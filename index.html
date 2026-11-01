@@ -6,23 +6,34 @@
 <title>Catalex — A catalyst for your next paper</title>
 <script>
 // Prepare before the first paint. If the main script cannot load, reveal the page.
-if ((!matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(location.search).get('intro') === 'typewriter') &&
-    (!location.hash || location.hash === '#top') &&
-    !new URLSearchParams(location.search).has('view') &&
-    performance.getEntriesByType('navigation')[0]?.type !== 'back_forward') {
-  document.documentElement.classList.add('intro-pending');
-  if (new URLSearchParams(location.search).get('intro') === 'typewriter') document.documentElement.classList.add('typewriter-pending');
+if ((!location.hash || location.hash === '#top') &&
+    !new URLSearchParams(location.search).has('view')) {
+  const url = new URL(location.href);
+  const replay = url.searchParams.get('playIntro') === '1';
+  const skip = url.searchParams.get('playIntro') === '0';
+  let seen = false;
+  try { seen = localStorage.getItem('catalex.introSeen') === '1'; }
+  catch { try { seen = sessionStorage.getItem('catalex.introSeen') === '1'; } catch {} }
+  const firstVisit = !skip && !seen && !history.state?.catalexIntroReplayed;
+  window.catalexIntroEntry = {play: replay || firstVisit, automatic: !replay && firstVisit};
+  // Consume explicit replay immediately: refreshing it returns to Welcome.
+  if (replay) {
+    url.searchParams.delete('playIntro');
+    history.replaceState({...history.state, catalexIntroReplayed: true}, '', url);
+  }
+  document.documentElement.classList.add('intro-pending', 'typewriter-pending');
+  if (!window.catalexIntroEntry.play || matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('welcome-preview');
   window.catalexIntroScrollRestoration = history.scrollRestoration;
   history.scrollRestoration = 'manual';
   window.catalexIntroFallback = setTimeout(() => {
-    document.documentElement.classList.remove('intro-pending', 'typewriter-pending');
+    document.documentElement.classList.remove('intro-pending', 'typewriter-pending', 'welcome-preview');
     history.scrollRestoration = window.catalexIntroScrollRestoration;
   }, 8000);
 }
 </script>
 <link rel="icon" href="./assets/favicon.png"/><link rel="preload" href="./assets/fonts/geist-regular.ttf" as="font" type="font/ttf" crossorigin/>
 <link rel="stylesheet" href="./styles.css"/><script src="./app.js" defer></script>
-</head><body>
+</head><body id="top">
 <a class="skip-link" href="#main">Skip to content</a>
 <div class="intro-scene" aria-hidden="true">
 <div role="img" class="reaction" aria-label="Human research plus agent collaboration, catalyzed by Catalex, produces a research paper.">
@@ -30,36 +41,41 @@ if ((!matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchPar
 <span class="operator" aria-hidden="true">+</span>
 <span class="reactant" aria-hidden="true">Collaboration<sub>agent</sub></span>
 <div class="catalyst" aria-hidden="true">
-<div class="catalyst-brand"><img class="catalyst-cat" src="./assets/cat-leaf.svg" width="88" height="73" alt=""/><span>Catalex</span></div>
+<div class="catalyst-brand catalex-mark"><img class="catalyst-cat" src="./assets/cat-leaf.svg" width="88" height="73" alt=""/><span>Catalex</span></div>
 <svg class="reaction-arrow" viewBox="0 0 180 24" fill="none"><path class="reaction-shaft" d="M2 12H176" pathLength="1"/><path class="reaction-head" d="M167 3L176 12L167 21" pathLength="1"/></svg>
 </div>
 <span class="reactant product" aria-hidden="true">Paper</span>
 </div>
 </div>
-<header id="top" class="site-header"><a class="brand" href="#top"><img src="./assets/cat-leaf.svg" width="36" height="30" alt=""/>Catalex</a>
-<a class="button solid header-download" href="./download/">Download</a></header>
+<template id="welcome-actions">
+<div class="hero-actions">
+<a class="hero-action hero-action-primary download-for-mac" href="./download/"><svg class="download-apple" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><use href="./assets/apple.svg#apple"/></svg><span>Beta is now available</span></a>
+<a class="hero-action hero-action-secondary" href="https://github.com/Catalex-app/Catalex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4M9 18c-4.51 2-5-2-7-2"/></svg><span>GitHub</span></a>
+</div>
+</template>
+<!-- site-header -->
 <main id="main">
 <section class="hero" aria-labelledby="hero-title">
 <div class="hero-copy">
 <h1 id="hero-title"><span>A <em>catalyst</em></span> <span>for your</span> <span>next paper.</span></h1>
-<p class="hero-caption"><span>An open-source, local-first LaTeX workspace for academic writing.</span><span>Draft, polish, and format with agent assistance, using the subscription you already have.</span></p>
-<div class="hero-actions">
-<a class="hero-action hero-action-primary" href="./download/"><span>Beta is now available</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></a>
-<a class="hero-action hero-action-secondary" href="https://github.com/RicercarG/Catalex"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4M9 18c-4.51 2-5-2-7-2"/></svg><span>GitHub</span></a>
-</div>
+<p class="hero-caption"><span>Draft, polish, and format with agent assistance, using the subscription you already have.</span></p>
+
 </div>
 <figure id="workspace" class="hero-workspace">
 <div class="hero-window">
 <!-- Native macOS controls: 14pt buttons, 23pt center spacing, at x=14, y=13 in the app's existing 40px toolbar. -->
 <svg class="hero-window-controls" viewBox="0 0 1440 914" fill="none" aria-hidden="true"><g stroke="#000" stroke-opacity=".12" stroke-width="1"><circle cx="21" cy="20" r="7" fill="#ff5f57"/><circle cx="44" cy="20" r="7" fill="#febc2e"/><circle cx="67" cy="20" r="7" fill="#28c840"/></g></svg>
-<img src="./assets/workspace-modern.jpg" width="1440" height="914" alt="The full Catalex workspace, with project files, LaTeX source, inline comments, the agent drawer, and a compiled PDF side by side." fetchpriority="high"/>
+<img class="hero-demo-poster" src="./assets/hero-demo-poster.jpg" width="1440" height="914" alt="Catalex’s LaTeX editor and PDF preview, ready to polish a paper’s abstract with an agent." fetchpriority="high"/>
+<video class="hero-demo-video" data-src="./assets/hero-demo.mp4" poster="./assets/hero-demo-poster.jpg" width="1440" height="914" muted autoplay loop playsinline preload="none" aria-hidden="true"></video>
+
 </div>
+<figcaption class="visually-hidden">Recorded demo: select the abstract and ask the agent to polish it. The response continues through Mini, Half, and Full views, then returns to Mini. Review the proposed changes and reject them to restore the original. No comments are shown.</figcaption>
 </figure>
 </section>
 <section id="highlights" class="highlights" aria-labelledby="highlights-title">
 <div class="container section-topline"><h2 id="highlights-title">Catalex highlights, at a glance.</h2><button type="button" class="button highlights-view-link" aria-haspopup="dialog"><span>Expand</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-7 7M10 20H4v-6M4 20l7-7"/></svg></button></div>
 <div class="highlight-track" role="region" aria-roledescription="carousel" aria-label="Catalex highlights" tabindex="0">
-<article class="highlight-card" data-scene="write" data-visual="bleed"><div class="card-copy"><h3>LaTeX and Markdown.</h3><p><strong>Artisan mode</strong> for focused writing. <strong>Duet mode</strong> for agent collaboration. Local-first, with MacTeX, MiKTeX, TeX Live, or Tectonic.</p></div><div class="card-visual"><svg class="screenshot-window-controls" viewBox="0 0 1440 914" fill="none" aria-hidden="true"><g stroke="#000" stroke-opacity=".12" stroke-width="1"><circle cx="21" cy="20" r="7" fill="#ff5f57"/><circle cx="44" cy="20" r="7" fill="#febc2e"/><circle cx="67" cy="20" r="7" fill="#28c840"/></g></svg><img src="./assets/workspace-editor.jpg" alt="Catalex’s focused editor and PDF preview, without comments or the agent drawer" width="1440" height="914" loading="lazy"/></div></article>
+<article class="highlight-card" data-scene="write" data-visual="bleed"><div class="card-copy"><h3>A clean space to write.</h3><p>A minimal workspace for LaTeX and Markdown. <strong>Artisan mode</strong> for focused writing. <strong>Duet mode</strong> for agent collaboration.</p></div><div class="card-visual"><svg class="screenshot-window-controls" viewBox="0 0 1440 914" fill="none" aria-hidden="true"><g stroke="#000" stroke-opacity=".12" stroke-width="1"><circle cx="21" cy="20" r="7" fill="#ff5f57"/><circle cx="44" cy="20" r="7" fill="#febc2e"/><circle cx="67" cy="20" r="7" fill="#28c840"/></g></svg><img src="./assets/workspace-editor.jpg" alt="Catalex’s focused editor and PDF preview, without comments or the agent drawer" width="1440" height="914" loading="lazy"/></div></article>
 <article class="highlight-card" data-scene="git" data-visual="contained"><div class="card-copy"><h3>Full Git support.</h3><p>Commit, stash, and merge visually. Auto-detect your Git setup and sync with Overleaf, GitHub, or any Git remote.</p></div><div class="card-visual"><img src="./assets/git-actions.jpg" alt="Catalex’s Git actions pop-up with Commit, Push, Pull, Stash, Rebase, Reset, history, and remote settings" width="1676" height="822" loading="lazy"/></div></article>
 <article class="highlight-card" data-scene="agent" data-visual="contained"><div class="card-copy"><h3>The whole project, in context.</h3><p>Your agent can work with the whole project, your selections, and compilation errors.</p></div><div class="card-visual"><img src="./assets/agent-in-context.jpg" alt="Selected LaTeX text above the Half-mode agent panel, with the same source range attached to the input" width="1908" height="936" loading="lazy"/></div></article>
 <article class="highlight-card" data-scene="review" data-visual="contained"><div class="card-copy"><h3>Review each change.</h3><p>Your agent works in a separate draft. When it’s ready, you accept or reject each change before it reaches your project.</p></div><div class="card-visual"><img src="./assets/agent-review.jpg" alt="Catalex's actual change review with solid green accept and red reject actions" width="1716" height="840" loading="lazy"/></div></article>
@@ -77,48 +93,47 @@ if ((!matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchPar
 </section>
 <section id="your-agent" class="agent-section container" aria-labelledby="agent-title">
   <div class="agent-story">
-    <h2 id="agent-title">Your agent. Your way.</h2>
-    <p class="agent-intro">Catalex brings your local agent into your writing workspace, supporting Codex and Claude Code with your existing subscription. Your skills and instructions in AGENTS.md or CLAUDE.md are supported too.</p>
-    <p class="agent-philosophy">Catalex adds tools and safeguards:</p>
+    <h2 id="agent-title">Light harness.<br>Deep integration.</h2>
+    <p class="agent-intro">Work with Codex, Claude Code, or Pi, using your existing subscription.</p>
     <dl class="agent-contributions">
-      <div><dt>Project context.</dt><dd>Your project, source and PDF selections, comments, and compilation errors.</dd></div>
-      <div><dt>MCP tools and skills.</dt><dd>Catalex’s built-in MCP tools and skills let agents compile LaTeX, inspect the PDF, and leave review notes.</dd></div>
-      <div><dt>A separate draft. Your review.</dt><dd>A temporary worktree for the agent. Your project stays yours; proposed edits wait for your review.</dd></div>
+      <div><dt>A built-in draft sandbox.</dt><dd>Catalex preserves your agent’s native tools, skills, and project instructions. An internal worktree provides a separate draft sandbox where it can work while you keep writing. When ready, it brings the changes back for review, without asking you to approve every edit along the way.</dd></div>
+      <div><dt>App access and control for your agent.</dt><dd>Catalex gives your agent access to the app, beyond the source files. Built-in MCP tools let it compile, inspect the PDF, and add or resolve comments. A dedicated agent UI keeps its work and your review close at hand.</dd></div>
     </dl>
   </div>
   <div class="agent-figures">
-    <figure class="agent-figure review-figure" aria-labelledby="flow-title">
-      <figcaption id="flow-title">Proposed by your agent. Approved by you.</figcaption>
-      <div class="review-flow" role="img" aria-label="You keep editing your project. The agent uses project context, MCP tools, and skills in one separate draft, then proposes edits for your review. Only accepted edits join your project.">
-        <svg class="flow-lines" viewBox="0 0 400 360" fill="none" preserveAspectRatio="none" aria-hidden="true">
-          <path class="author-line" d="M112 44V340"/>
-          <path class="draft-line" d="M112 44C112 76 240 76 240 108V210"/>
-          <path class="accepted-line" d="M240 282C240 310 112 300 112 326"/>
+    <figure class="agent-figure review-figure" aria-label="Agent draft and review workflow">
+      <div class="review-flow" role="img" aria-label="Flow runs upward along the user’s project history. The user keeps writing on the white branch while the agent works on a violet worktree branch. Both enter the user’s approval step, backed by a three-way merge. The agent’s worktree uses separate, temporary, private storage. Only accepted edits leave the review, curving back to the green node on the user’s main branch before continuing upward.">
+        <svg class="flow-lines" viewBox="0 0 400 480" fill="none" preserveAspectRatio="none" aria-hidden="true">
+          <path class="author-line" d="M112 460V222"/>
+          <path class="draft-line" d="M112 430C112 385 240 385 240 340V222"/>
+          <path class="accepted-line" d="M176 158C176 118 112 118 112 78V20"/>
         </svg>
         <span class="flow-node author-node flow-start" aria-hidden="true"></span>
         <span class="flow-node author-node flow-edit" aria-hidden="true"></span>
         <span class="flow-node draft-node" aria-hidden="true"></span>
         <span class="flow-node accepted-node" aria-hidden="true"></span>
-        <span class="flow-label flow-project">Your project</span>
-        <span class="flow-label flow-author">You keep writing</span>
+        <span class="flow-label flow-project">User’s project</span>
+        <span class="flow-label flow-author">User keeps writing</span>
         <span class="flow-label flow-accepted">Accepted edits</span>
-        <div class="flow-agent-step"><strong>Agent’s draft</strong><span>Project context<br>MCP tools &amp; skills</span></div>
-        <div class="review-gate"><strong>Review changes</strong><div><span class="decision-reject">Reject</span><span class="decision-accept">Accept</span></div></div>
+        <div class="flow-agent-step"><strong>Agent’s worktree</strong><span>Separate, temporary, private storage.</span></div>
+        <div class="review-gate"><strong>User’s approval</strong><span>3-way merge</span></div>
       </div>
+      <button class="flow-replay" type="button" aria-label="Replay workflow animation" title="Replay animation" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10a9 9 0 1 1 2.6 8.4M3 4v6h6"/></svg></button>
     </figure>
   </div>
 </section>
 
 <section id="for-researchers" class="research-section container" aria-labelledby="research-title">
   <h2 id="research-title">Built for researchers, by researchers.</h2>
-  <p class="research-intro">Designed for computer science students and researchers writing LaTeX papers and Markdown rebuttals.</p>
+  <p class="research-intro">Designed mainly for computer science researchers and students writing LaTeX papers and Markdown rebuttals.</p>
+  <!-- Lucide icons: license in assets/lucide-license.txt -->
   <ul class="research-principles">
-    <li><h3>Writing support, under your direction.</h3><p>Catalex is a writing helper, not an autonomous researcher. You lead the research; your agent helps turn results into tables, draft paragraphs, or polish wording within your workflow. You remain responsible for the paper.</p></li>
-    <li><h3>Work with the compiled paper.</h3><p>By letting your agent compile LaTeX and inspect the PDF, Catalex opens up possibilities beyond copying text into a chat box. It can help fit page limits, reposition figures, tighten paragraphs with short final lines, check the conference template for missing required sections, and more.</p></li>
-    <li><h3>We respect your project folder.</h3><p>Catalex stores its history and agent drafts separately in private app storage. Your project stays free of extra hidden app files and indexes.</p></li>
-    <li><h3>Stay connected to coauthors.</h3><p>Catalex fits into your team’s existing workflow. Write locally with your agent, then use Git to sync with coauthors on Overleaf or GitHub.</p></li>
+    <li><span class="research-icon-frame"><svg class="research-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 20h-1a2 2 0 0 1-2-2 2 2 0 0 1-2 2H6"/><path d="M13 8h7a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-7"/><path d="M5 16H4a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h1"/><path d="M6 4h1a2 2 0 0 1 2 2 2 2 0 0 1 2-2h1"/><path d="M9 6v12"/></svg></span><h3>Writing support, under your direction.</h3><p>Catalex is a writing helper, not an autonomous researcher. You lead the research; your agent helps turn results into tables, draft paragraphs, or polish wording within your workflow. You remain responsible for the paper.</p></li>
+    <li><span class="research-icon-frame"><svg class="research-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.706.706l3.588 3.588A2.4 2.4 0 0 1 20 8v6"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="m14 20 2 2 4-4"/></svg></span><h3>Help with submission prep.</h3><p>As submission approaches, your agent can help reduce page count, tighten paragraphs with short final lines, adjust figure placement, and check for missing sections required by your venue. It can compile LaTeX and inspect the PDF to check the result.</p></li>
+    <li><span class="research-icon-frame"><svg class="research-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></svg></span><h3>We respect your project folder.</h3><p>Catalex stores its history and agent drafts separately in private app storage. Your project stays free of extra hidden app files and indexes.</p></li>
+    <li><span class="research-icon-frame"><svg class="research-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg></span><h3>Stay connected to coauthors.</h3><p>Catalex fits into your team’s existing workflow. Write locally with your agent, then use Git to sync with coauthors on Overleaf or GitHub.</p></li>
   </ul>
 </section>
 
-</main><footer class="site-footer container"><a class="brand" href="#top">Catalex</a><span>A local workspace for research writing.</span><a href="#top">Back to top ↑</a></footer>
+</main>
 </body></html>

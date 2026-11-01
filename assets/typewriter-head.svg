@@ -1,34 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -72 220 212" fill="none">
-  <title>Rail-mounted T-shaped printer carriage with a left-facing lamp</title>
+  <title>Compact rail spotlight with a satin aluminium cylinder and recessed glass lens</title>
   <defs>
-    <linearGradient id="body" x1="94" y1="22" x2="120" y2="120" gradientUnits="userSpaceOnUse"><stop stop-color="#fdfdfb"/><stop offset=".45" stop-color="#efefec"/><stop offset="1" stop-color="#d3d4d2"/></linearGradient>
-    <linearGradient id="edge" x1="100" y1="22" x2="100" y2="121" gradientUnits="userSpaceOnUse"><stop stop-color="#ffffff"/><stop offset=".5" stop-color="#d2d3d0"/><stop offset="1" stop-color="#9d9f9d"/></linearGradient>
-    <linearGradient id="foot" x1="0" y1="117" x2="0" y2="134" gradientUnits="userSpaceOnUse"><stop stop-color="#a5a7a5"/><stop offset=".4" stop-color="#e3e4e1"/><stop offset="1" stop-color="#848785"/></linearGradient>
-    <linearGradient id="nozzle" x1="9" y1="0" x2="29" y2="0" gradientUnits="userSpaceOnUse"><stop stop-color="#45474a"/><stop offset=".35" stop-color="#17191c"/><stop offset="1" stop-color="#5d5f60"/></linearGradient>
-    <filter id="shadow" x="-30%" y="-35%" width="170%" height="190%"><feDropShadow dx="1" dy="5" stdDeviation="3.5" flood-color="#18181b" flood-opacity=".2"/></filter>
-    <filter id="lamp" x="-300%" y="-20%" width="700%" height="140%"><feGaussianBlur stdDeviation="1.8"/></filter>
+    <linearGradient id="housing" x1="0" y1="22" x2="0" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#eeeeee"/><stop offset=".2" stop-color="#fafafa"/><stop offset=".52" stop-color="#e3e3e3"/><stop offset=".85" stop-color="#c7c7c7"/><stop offset="1" stop-color="#aaaaaa"/>
+    </linearGradient>
+    <linearGradient id="cap" x1="0" y1="22" x2="0" y2="118" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#d4d4d4"/><stop offset=".45" stop-color="#e5e5e5"/><stop offset="1" stop-color="#989898"/>
+    </linearGradient>
+    <linearGradient id="collar" x1="12" y1="0" x2="56" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#555555"/><stop offset=".25" stop-color="#242424"/><stop offset=".8" stop-color="#3b3b3b"/><stop offset="1" stop-color="#747474"/>
+    </linearGradient>
+    <linearGradient id="reflector" x1="12" y1="0" x2="48" y2="0" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#cccccc"/><stop offset=".18" stop-color="#686868"/><stop offset=".55" stop-color="#dedede"/><stop offset="1" stop-color="#8f8f8f"/>
+    </linearGradient>
+    <radialGradient id="glass" cx=".35" cy=".35" r=".8">
+      <stop stop-color="#8b8b8b"/><stop offset=".6" stop-color="#4b4b4b"/><stop offset="1" stop-color="#282828"/>
+    </radialGradient>
+    <linearGradient id="bearing" x1="0" y1="-60" x2="0" y2="-34" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#505050"/><stop offset=".45" stop-color="#333333"/><stop offset="1" stop-color="#1a1a1a"/>
+    </linearGradient>
+    <filter id="shadow" x="-25%" y="-25%" width="160%" height="175%"><feDropShadow dx="1" dy="3" stdDeviation="2.5" flood-color="#111111" flood-opacity=".18"/></filter>
   </defs>
   <g filter="url(#shadow)">
-    <rect x="105" y="-47" width="10" height="76" rx="2" fill="url(#nozzle)"/>
-    <path d="M107 -45V27" stroke="#d9dbd7" stroke-width="2"/>
-    <rect x="84" y="-66" width="52" height="38" rx="5" fill="url(#nozzle)" stroke="#151719" stroke-width="1.4"/>
-    <path d="M89 -61H131" stroke="#707679" stroke-opacity=".4" stroke-width="1.5"/>
-    <path d="M89 -32H131" stroke="#080a0b" stroke-width="2"/>
-    <path d="M88 -56V-38" stroke="#5c6265" stroke-opacity=".35" stroke-width="1.4"/>
-    <rect x="12" y="10" width="18" height="120" rx="4" fill="url(#nozzle)"/>
-    <rect x="25" y="22" width="178" height="99" rx="13" fill="#b4b6b3"/>
-    <rect x="25" y="19" width="178" height="98" rx="13" fill="url(#body)" stroke="url(#edge)" stroke-width="1.5"/>
-    <path d="M39 23H187Q199 23 199 36" stroke="#fff" stroke-opacity=".8" stroke-width="1.4"/>
-    <path d="M27 102H201" stroke="#bfc1be" stroke-opacity=".65"/>
-    <path d="M27 104H201" stroke="#f7f7f3" stroke-opacity=".7"/>
-    <rect x="40" y="39" width="57" height="47" rx="2" fill="#ecece9"/>
-    <path d="M46 48H89M46 54H89M46 60H89M46 66H89M46 72H89M46 78H89" stroke="#484a4b" stroke-width="2.3"/>
-    <circle cx="178" cy="38" r="4" fill="#bb5f30"/>
-    <circle cx="177.2" cy="37.2" r="2.2" fill="#e98a4c"/>
-    <path d="M124 73H178" stroke="#c7c9c5" stroke-width="1.5"/>
-    <path d="M124 76H178" stroke="#fdfdfa" stroke-width="1.5"/>
-    <rect x="9" y="27" width="5" height="86" rx="2" fill="#fff8e9" opacity=".6" filter="url(#lamp)"/>
-    <rect x="11" y="29" width="2.5" height="82" rx="1.2" fill="#fff9e9"/>
-    <path d="M18 23V117" stroke="#686b6b" stroke-width="1"/>
+    <path d="M110 -35V28" stroke="#414141" stroke-width="7"/>
+    <path d="M108 -34V24" stroke="#909090" stroke-opacity=".6"/>
+    <rect x="93" y="-60" width="34" height="26" rx="2" fill="url(#bearing)"/>
+    <path d="M96 -58H124" stroke="#797979" stroke-opacity=".45"/>
+    <rect x="99" y="17" width="22" height="15" rx="3" fill="#343434"/>
+    <ellipse cx="174" cy="70" rx="15" ry="48" fill="url(#cap)"/>
+    <path d="M34 22H174V118H34Z" fill="url(#housing)"/>
+    <path d="M48 24H172" stroke="#ffffff" stroke-opacity=".6" stroke-width="1.1"/>
+    <path d="M172 29V111" stroke="#929292" stroke-opacity=".4" stroke-width=".8"/>
+    <path d="M176 29C187 37 187 102 176 111" stroke="#f3f3f3" stroke-opacity=".45" stroke-width="1"/>
+    <ellipse cx="34" cy="70" rx="22" ry="48" fill="url(#collar)" stroke="#777777" stroke-width=".7"/>
+    <ellipse cx="30" cy="70" rx="18" ry="41" fill="url(#reflector)"/>
+    <ellipse cx="27" cy="70" rx="13" ry="34" fill="#282828"/>
+    <ellipse cx="26" cy="70" rx="11" ry="32" fill="url(#glass)"/>
+    <path d="M25 40C18 46 17 61 17 72" stroke="#f3f3f3" stroke-opacity=".6" stroke-width="1" stroke-linecap="round"/>
+    <path d="M38 42C47 58 47 85 38 99" stroke="#f2f2f2" stroke-opacity=".5" stroke-width=".9"/>
   </g>
 </svg>

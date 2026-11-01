@@ -1,0 +1,4 @@
+{
+  "initial": "\\documentclass[12pt]{article}\n\\usepackage[margin=1in]{geometry}\n\\usepackage{amsmath}\n\n\\begin{document}\n\\section*{A clean space to write}\nResearch starts with a question.\n\n\n\\end{document}\n",
+  "insertion": "A focused workspace makes room for discovery.\n\n\\[\n  \\mathcal{L}(\\theta) = \\frac{1}{n}\n  \\sum_{i=1}^{n} (y_i - f_\\theta(x_i))^2\n\\]\n\n"
+}

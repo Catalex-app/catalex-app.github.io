@@ -10,12 +10,23 @@ test("neutral page, real captures, and local links work under a Pages subpath", 
 		if (r.status() >= 400) failed.push(r.url());
 	});
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("./");
+	await page.goto("./#main");
 	await expect(page.getByRole("heading", { level: 1 })).toHaveText(
 		"A catalyst for your next paper.",
 	);
 	await expect(page.locator(".eyebrow")).toHaveCount(0);
+	await expect(page.locator("#main .hero-actions")).toHaveCount(0);
+	const github=page.locator(".header-github");
+	await expect(github).toHaveAccessibleName("GitHub");
+	await expect(github).toHaveAttribute("href","https://github.com/Catalex-app/Catalex");
+	await expect(github).toHaveText("");
+	const downloadBox=await page.locator(".header-download").boundingBox();
+	const githubBox=await github.boundingBox();
+	expect(githubBox.x).toBeGreaterThan(downloadBox.x+downloadBox.width);
+	expect(githubBox.height).toBeCloseTo(downloadBox.height,0);
 	await expect(page.locator(".highlight-card")).toHaveCount(6);
+	await expect(page.locator('.highlight-card[data-scene="write"] img')).toHaveAttribute("src","./assets/workspace-editor.jpg");
+	await expect(page.locator("#highlights video, #highlights .highlight-demo-replay")).toHaveCount(0);
 	await expect(page.locator("iframe")).toHaveCount(0);
 	await expect(page.locator(".highlight-card a")).toHaveCount(0);
 	expect(
@@ -37,7 +48,7 @@ test("highlight navigation respects boundaries, restarts, and supports keys", as
 	page,
 }) => {
 	await page.emulateMedia({ reducedMotion: "reduce" });
-	await page.goto("./");
+	await page.goto("./#main");
 	const dots = page.locator(".carousel-dots button");
 
 	await expect(page.getByRole("button", { name: "Previous highlight" })).toBeDisabled();
@@ -60,7 +71,7 @@ test("highlight navigation respects boundaries, restarts, and supports keys", as
 
 test("highlights stay put until manually navigated", async ({ page }) => {
 	await page.clock.install();
-	await page.goto("./");
+	await page.goto("./#main");
 	await page.locator(".highlight-track").scrollIntoViewIfNeeded();
 	await page.mouse.move(0, 0);
 	await page.clock.fastForward(30000);
@@ -73,12 +84,21 @@ for (const width of [360, 390, 768, 949, 1440]) {
 		page,
 	}) => {
 		await page.setViewportSize({ width, height: 1000 });
-		await page.goto("./");
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		await page.goto("./#main");
+		await page.evaluate(() => document.fonts.ready);
 		expect(
 			await page.evaluate(
 				() => document.documentElement.scrollWidth <= innerWidth,
 			),
 		).toBe(true);
+		const hero=await page.locator('.hero').boundingBox();
+		const copy=await page.locator('.hero-copy').boundingBox();
+		const demo=await page.locator('.hero-workspace').boundingBox();
+		expect(demo.y-copy.y-copy.height).toBeGreaterThanOrEqual(27);
+		expect(Math.abs(demo.width-hero.width)).toBeLessThan(1);
+		expect(Math.abs(demo.x+demo.width/2-width/2)).toBeLessThan(1);
+		await expect(page.locator('.hero-copy')).toHaveCSS('text-align','center');
 		await page.emulateMedia({ reducedMotion: "reduce" });
 		await page.locator('.highlight-track').focus();
 		await page.keyboard.press('ArrowRight');
@@ -91,19 +111,18 @@ for (const width of [360, 390, 768, 949, 1440]) {
 	});
 }
 
-test("root preview serves the workspace and blocks private project files", async ({
+test("root preview serves the site and blocks private project files", async ({
 	request,
 }) => {
-	for (const resource of [
-		"",
-		"assets/workspace/index.html",
-		"assets/workspace/paper.json",
-	])
-		expect((await request.get(`http://127.0.0.1:4323/${resource}`)).ok()).toBe(
-			true,
-		);
+	expect((await request.get("http://127.0.0.1:4323/")).ok()).toBe(true);
+	// Capture bundles may be generated locally, but must never enter the deployed build.
+	for (const resource of ["assets/workspace/index.html", "assets/workspace/paper.json"])
+		expect((await request.get(`./${resource}`)).status()).toBe(404);
 	for (const resource of [
 		".git/config",
+		".githubissues.json",
+		".env",
+		".release-env.sh",
 		"docs/website/01-story-and-structure.md",
 		"workspace-demo/main.tsx",
 	])
@@ -113,20 +132,45 @@ test("root preview serves the workspace and blocks private project files", async
 });
 
 for (const width of [390, 1010]) {
-  test(`top links reveal the full header at ${width}px`, async ({ page }) => {
+  test(`Main header stays sticky and top links work at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("./#top");
+    await page.getByRole("button",{name:"Scroll down to learn more"}).click();
     const expectTop = async () => {
       await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0);
-      expect(await page.locator(".site-header").evaluate(el => el.getBoundingClientRect().top)).toBe(0);
+      expect(await page.locator(".site-header").evaluate(el => el.getBoundingClientRect().top)).toBe(width<600 ? 12 : 16);
     };
     await expectTop();
-    for (const selector of [".site-header .brand", ".site-footer .brand", ".site-footer a:last-child"]) {
-      await page.locator("#for-researchers").scrollIntoViewIfNeeded();
-      await page.locator(selector).click();
-      await expectTop();
+    const header=page.locator(".site-header");
+    await expect(header).toHaveCSS("position","sticky");
+    await expect(header).toHaveCSS("background-color","rgba(255, 255, 255, 0.96)");
+    await expect(header).toHaveCSS("border-radius",width<600 ? "12px" : "14px");
+    for(const top of [450,1200]) {
+      await page.evaluate(top=>scrollTo({top,behavior:"instant"}),top);
+      expect(await page.evaluate(()=>scrollY)).toBe(top);
+      const box=await header.boundingBox();
+      expect(box.y).toBe(width<600 ? 12 : 16);
+      expect(box.height).toBe(width<600 ? 92 : 64);
+      await expect(page.locator(".header-download")).toBeInViewport();
+      await expect(page.locator(".header-github")).toBeInViewport();
+      expect(await header.evaluate(el=>el.contains(document.elementFromPoint(innerWidth/2,el.getBoundingClientRect().top+12)))).toBe(true);
     }
+    await page.screenshot({path:`output/main-sticky-header-${width}.png`});
+    await page.locator(".site-header .brand").click();
+    await expect(page.locator("html")).toHaveAttribute("data-intro","ready");
+    await expectTop();
+    await page.getByRole("button",{name:"Scroll down to learn more"}).click();
+    await expect(page.locator("html")).toHaveAttribute("data-intro","complete");
+    await page.locator("#for-researchers").evaluate(el=>el.scrollIntoView());
+    expect(await page.locator("#for-researchers").evaluate(el=>el.getBoundingClientRect().top)).toBeGreaterThanOrEqual(width<600 ? 64 : 76);
+    await expect(page.locator(".site-footer")).toHaveCount(0);
+    await page.evaluate(() => scrollTo({top: document.documentElement.scrollHeight, behavior: 'instant'}));
+    await expect(page.locator(".site-header .brand")).toBeInViewport();
+    await page.screenshot({path:`output/main-ending-${width}.png`});
+    await page.locator(".site-header .brand").click();
+    await expect(page.locator("html")).toHaveAttribute("data-intro","ready");
+    await expectTop();
   });
 }
 
@@ -195,7 +239,7 @@ for (const width of [390, 1010]) {
   test(`scroll reveals replay and respect motion preferences at ${width}px`, async ({ page }) => {
     await page.setViewportSize({width, height:1000});
     await page.emulateMedia({reducedMotion:'no-preference'});
-    await page.goto('./');
+    await page.goto('./#main');
     await expect(page.locator('html')).toHaveAttribute('data-intro', 'complete');
     const story = page.locator('.agent-story');
     await expect(story).toHaveAttribute('data-reveal', 'pending');
@@ -273,135 +317,13 @@ test('expanded wheel motion settles and yields to navigation', async ({page}) =>
   await expect(dialog).not.toBeVisible();
 });
 
-for (const width of [390, 1010]) {
-  test(`equation forms, brand docks, and refresh replays at ${width}px`, async ({page}) => {
-    await page.setViewportSize({width, height: 1000});
-    await page.emulateMedia({reducedMotion: 'no-preference'});
-    const errors = [];
-    page.on('pageerror', error => errors.push(error.message));
-    await page.goto('./#top');
-    const root = page.locator('html');
-    const scene = page.locator('.intro-scene');
-    const opacity = locator => locator.evaluate(el => Number(getComputedStyle(el).opacity));
-    await expect(root).toHaveAttribute('data-intro', 'forming');
-    await expect(scene).toBeVisible();
-    expect(await opacity(page.locator('#main'))).toBe(0);
-    expect(await opacity(page.locator('.header-download'))).toBe(0);
-    expect(await opacity(scene.locator('.product .intro-letter').last())).toBe(0);
-    await expect.poll(() => opacity(scene.locator('.product .intro-letter').last()), {intervals: [50]}).toBe(1);
-    const sourceMark = await scene.locator('.catalyst-brand').boundingBox();
-    const sourceArrow = await scene.locator('.reaction-arrow').boundingBox();
-    const sourceText = await scene.locator('.catalyst-brand > span').boundingBox();
-    const sourceIcon = await scene.locator('.catalyst-cat').boundingBox();
-    expect(Math.abs(sourceMark.x + sourceMark.width / 2 - sourceArrow.x - sourceArrow.width / 2)).toBeLessThan(1);
-    expect(sourceText.x + sourceText.width).toBeLessThanOrEqual(sourceMark.x + sourceMark.width + 1);
-    expect(sourceIcon.width).toBe(36);
-    await page.screenshot({path: `output/intro-equation-${width}.png`});
-    await expect(root).toHaveAttribute('data-intro', 'docking');
-    const mark = page.locator('.site-header .brand');
-    const moving = await mark.boundingBox();
-    expect(moving.y).toBeGreaterThan(100);
-    expect(moving.x).toBeGreaterThan(32);
-    await page.screenshot({path: `output/intro-docking-${width}.png`});
-    await expect(root).toHaveAttribute('data-intro', 'complete');
-    await expect(scene).toHaveCount(0);
-    expect(await opacity(page.locator('#main'))).toBe(1);
-    expect(await opacity(page.locator('.header-download'))).toBe(1);
-    expect((await mark.boundingBox()).y).toBeLessThan(40);
-    await page.screenshot({path: `output/intro-settled-${width}.png`});
-    await page.evaluate(() => scrollTo({top: 1600, behavior: 'instant'}));
-    await page.evaluate(() => scrollTo({top: 0, behavior: 'instant'}));
-    await expect(scene).toHaveCount(0);
-    await page.evaluate(() => scrollTo({top: 1600, behavior: 'instant'}));
-    await page.reload();
-    await expect(root).toHaveAttribute('data-intro', 'forming');
-    await expect(scene).toBeVisible();
-    await expect.poll(() => page.evaluate(() => scrollY)).toBe(0);
-    await page.keyboard.press('Tab');
-    await expect(scene).toHaveCount(0);
-    await expect(page.getByRole('link', {name: 'Skip to content'})).toBeFocused();
-    expect(await opacity(page.locator('#main'))).toBe(1);
-    expect(errors).toEqual([]);
-  });
-}
-
-test('intro types individual characters and draws shaft before arrowhead', async ({page}) => {
-  await page.setViewportSize({width: 1440, height: 1000});
-  await page.emulateMedia({reducedMotion: 'no-preference'});
-  await page.goto('./');
-  await expect(page.locator('html')).toHaveAttribute('data-intro', 'forming');
-  const frame = async time => {
-    await page.locator('.intro-scene').evaluate((scene, time) => {
-      for (const animation of scene.getAnimations({subtree: true})) {
-        animation.pause();
-        animation.currentTime = time;
-      }
-    }, time);
-  };
-  const visibleText = selector => page.locator(selector).first().evaluate(el =>
-    [...el.querySelectorAll('.intro-letter')]
-      .filter(letter => getComputedStyle(letter).opacity === '1')
-      .map(letter => letter.textContent).join(''));
-  const offset = selector => page.locator(selector).evaluate(el => parseFloat(getComputedStyle(el).strokeDashoffset));
-  await frame(250);
-  expect(await visibleText('.intro-scene .reactant')).toBe('Resea');
-  expect(await visibleText('.intro-scene .operator')).toBe('');
-  expect(await visibleText('.intro-scene .product')).toBe('');
-  await page.screenshot({path: 'output/intro-typewriter.png'});
-  await frame(1900);
-  expect(await visibleText('.intro-scene .reactant')).toBe('Researchhuman');
-  expect(await visibleText('.catalyst-brand')).toBe('Catalex');
-  expect(await offset('.reaction-shaft')).toBeGreaterThan(0);
-  expect(await offset('.reaction-shaft')).toBeLessThan(1);
-  expect(await offset('.reaction-head')).toBe(1);
-  await page.screenshot({path: 'output/intro-shaft.png'});
-  await frame(2250);
-  expect(await offset('.reaction-shaft')).toBe(0);
-  expect(await offset('.reaction-head')).toBeGreaterThan(0);
-  expect(await offset('.reaction-head')).toBeLessThan(1);
-  await page.screenshot({path: 'output/intro-arrowhead.png'});
-  await frame(2570);
-  expect(await visibleText('.intro-scene .product')).toBe('Paper');
-  const mark = await page.locator('.catalyst-brand').boundingBox();
-  const arrow = await page.locator('.reaction-arrow').boundingBox();
-  expect(Math.abs(mark.x + mark.width / 2 - arrow.x - arrow.width / 2)).toBeLessThan(1);
-  expect(arrow.y + arrow.height / 2 - mark.y - mark.height).toBeCloseTo(10, 0);
-  await page.screenshot({path: 'output/intro-alignment.png'});
-  await page.keyboard.press('Escape');
-  await expect(page.locator('.intro-scene')).toHaveCount(0);
-});
-
-test('intro yields to reduced motion, resize, and section navigation', async ({page}) => {
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  await page.goto('./');
-  await expect(page.locator('.intro-scene')).toHaveCount(0);
-  expect(await page.locator('#main').evaluate(el => getComputedStyle(el).opacity)).toBe('1');
-  await page.emulateMedia({reducedMotion: 'no-preference'});
-  await page.reload();
-  await expect(page.locator('.intro-scene')).toBeVisible();
-  await page.emulateMedia({reducedMotion: 'reduce'});
-  await expect(page.locator('.intro-scene')).toHaveCount(0);
-  await page.emulateMedia({reducedMotion: 'no-preference'});
-  await page.reload();
-  await expect(page.locator('.intro-scene')).toBeVisible();
-  await page.setViewportSize({width: 700, height: 800});
-  await expect(page.locator('.intro-scene')).toHaveCount(0);
-  await page.reload();
-  await expect(page.locator('.intro-scene')).toBeVisible();
-  await page.mouse.wheel(0, 200);
-  await expect(page.locator('.intro-scene')).toHaveCount(0);
-  await page.goto('./#highlights');
-  await expect(page.locator('.intro-scene')).toHaveCount(0);
-  await expect(page.locator('#highlights-title')).toBeInViewport();
-});
-
 test('landing page stays usable when JavaScript is unavailable', async ({browser}) => {
   const context = await browser.newContext({javaScriptEnabled: false});
   const page = await context.newPage();
   await page.goto('http://127.0.0.1:4322/catalex.github.io/');
   await expect(page.locator('.intro-scene')).not.toBeVisible();
   await expect(page.getByRole('heading', {level: 1})).toBeVisible();
-  await page.getByRole('link', {name: 'Beta is now available'}).click();
+  await page.locator('.header-download').click();
   await expect(page.getByRole('heading', {name: 'Welcome to Catalex.'})).toBeVisible();
   await context.close();
 });
@@ -416,21 +338,22 @@ test('a missing main script cannot leave the landing page hidden', async ({page}
 });
 
 for (const width of [390, 1040]) {
-  test(`download page links and placeholder work at ${width}px`, async ({page}) => {
+  test(`download page links to GitHub releases at ${width}px`, async ({page}) => {
     await page.setViewportSize({width, height: 1000});
     await page.emulateMedia({reducedMotion: 'reduce'});
     const failures = [];
     page.on('pageerror', error => failures.push(error.message));
     page.on('response', response => { if (response.status() >= 400) failures.push(response.url()); });
-    await page.goto('./');
-    await page.getByRole('link', {name: 'Beta is now available'}).click();
+    await page.goto('./#main');
+    await page.locator('.header-download').click();
     await expect(page).toHaveURL(/\/catalex\.github\.io\/download\/$/);
-    await expect(page.getByRole('heading', {name: 'Welcome to Catalex.'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Welcome to Catalex. Beta'})).toBeVisible();
     expect(await page.locator('.download-icon').evaluate(img => img.complete && img.naturalWidth === 512)).toBe(true);
     const url = page.url();
-    await page.getByRole('button', {name: 'Download', exact: true}).click();
-    expect(page.url()).toBe(url);
+    const download = page.getByRole('link', {name: 'Get beta on GitHub Releases', exact: true});
+    await expect(download).toHaveAttribute('href', 'https://github.com/Catalex-app/Catalex/releases');
     await page.locator('.site-header .brand').click();
+    await page.getByRole('button',{name:'Scroll down to learn more'}).click();
     await page.locator('.header-download').click();
     await expect(page).toHaveURL(url);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
