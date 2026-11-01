@@ -99,8 +99,8 @@ for (const width of [360, 390, 768, 949, 1440]) {
 		expect(demo.y-copy.y-copy.height).toBeGreaterThanOrEqual(27);
 		expect(Math.abs(demo.width-hero.width)).toBeLessThan(1);
 		// Classic scrollbars reserve layout space on Linux and Windows.
-		const contentWidth = await page.evaluate(() => document.documentElement.clientWidth);
-		expect(Math.abs(demo.x+demo.width/2-contentWidth/2)).toBeLessThan(1);
+		const contentBox = await page.locator('body').boundingBox();
+		expect(Math.abs(demo.x+demo.width/2-contentBox.x-contentBox.width/2)).toBeLessThan(1);
 		await expect(page.locator('.hero-copy')).toHaveCSS('text-align','center');
 		await page.emulateMedia({ reducedMotion: "reduce" });
 		const track = page.locator('.highlight-track');

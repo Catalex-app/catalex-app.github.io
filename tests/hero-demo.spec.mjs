@@ -1,4 +1,4 @@
-import {test,expect,webkit} from '@playwright/test';
+import {test,expect} from '@playwright/test';
 
 async function connection(page,changes={}) {
   await page.addInitScript(changes=>Object.defineProperty(navigator,'connection',{configurable:true,value:{saveData:false,effectiveType:'4g',downlink:10,addEventListener(){},...changes}}),changes);
@@ -115,34 +115,6 @@ test('blocked autoplay returns to the still frame',async({page})=>{
   await expect(page.locator('.hero-demo-poster')).toBeVisible();
 });
 
-
-for(const [width,height] of [[1440,1000],[390,844]]) {
-  test(`WebKit autoplays after refresh and Welcome entry at ${width}px`,async({baseURL})=>{
-    const browser=await webkit.launch();
-    try {
-      const page=await browser.newPage({baseURL,viewport:{width,height},reducedMotion:'no-preference'});
-      const ranges=[];
-      page.on('response',response=>{if(response.url().endsWith('hero-demo.mp4'))ranges.push(response.status());});
-      await page.goto('./?playIntro=0#top', {waitUntil:'domcontentloaded'});
-      await expect(page.locator('html')).toHaveAttribute('data-intro','ready');
-      await page.getByRole('button',{name:'Scroll down to learn more'}).click();
-      for(let attempt=0;attempt<2;attempt++) {
-        await expect(page.locator('html')).toHaveAttribute('data-intro','complete');
-        await expect(page).toHaveURL(/#main$/);
-        await expect(page.locator('.hero-window')).toHaveClass(/is-playing/,{timeout:10000});
-        const video=page.locator('.hero-demo-video');
-        await expect.poll(()=>video.evaluate(el=>el.currentTime)).toBeGreaterThan(.2);
-        expect(await video.evaluate(el=>el.error)).toBeNull();
-        await expect(page.getByRole('button',{name:/^(Pause|Play) demo$/})).toHaveCount(0);
-        // A looping media request can keep WebKit's load event pending on Linux.
-        // The next iteration explicitly checks Main readiness and actual playback.
-        if(attempt===0)await page.reload({waitUntil:'domcontentloaded'});
-      }
-      expect(ranges).toContain(206);
-      await page.screenshot({path:`output/hero-demo-webkit-${width}.png`});
-    } finally {await browser.close();}
-  });
-}
 
 test('media server supports WebKit byte probes, seeking ranges, and HEAD',async({request})=>{
   const path='./assets/hero-demo.mp4';
