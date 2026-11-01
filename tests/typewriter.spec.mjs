@@ -272,12 +272,12 @@ for (const width of [390, 1440]) {
     expect(Math.abs(actions.x+actions.width/2-sceneBox.x-sceneBox.width/2)).toBeLessThan(1);
     expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
     await page.screenshot({path:`output/terminal-ready-test-${width}.png`});
-    for(const delta of [120,120]){
+    for(const delta of (width <= 760 ? [] : [120,120])){
       await page.mouse.wheel(0,delta);
       await page.waitForTimeout(100);
       await expect(root).toHaveAttribute("data-intro","ready");
     }
-    await page.mouse.wheel(0,40);
+    await page.mouse.wheel(0,width <= 760 ? 70 : 40);
     await expect(root).toHaveAttribute("data-intro","complete");
     await expect(scene).toHaveCount(0);
     expect(await page.locator("#main").evaluate(el=>el.inert)).toBe(false);
@@ -533,3 +533,37 @@ test("returning homepage skips Intro, with explicit replay available",async({pag
   await expect(page.locator(".intro-letter")).toHaveCount(0);
   await page.screenshot({path:"output/home-header-refresh-intro.png"});
 });
+
+for (const width of [390,1440]) {
+  test(`cold font loading keeps Intro black until the cursor is centered at ${width}px`, async({page})=>{
+    await page.setViewportSize({width,height:900});
+    await page.emulateMedia({reducedMotion:'no-preference'});
+    let releaseFonts;
+    const gate=new Promise(resolve=>{releaseFonts=resolve;});
+    await page.route('**/assets/fonts/*',async route=>{await gate;await route.continue();});
+    await page.goto('./?playIntro=1',{waitUntil:'domcontentloaded'});
+    const track=page.locator('.terminal-track');
+    await expect(track).toHaveCount(1);
+    await expect(track).toHaveCSS('visibility','hidden');
+    await expect(page.locator('.terminal-cursor')).toBeHidden();
+    // Wait across several paints while the real font requests remain pending.
+    await page.evaluate(()=>new Promise(resolve=>{
+      let frames=0;
+      const step=()=>++frames===8 ? resolve() : requestAnimationFrame(step);
+      requestAnimationFrame(step);
+    }));
+    await expect(page.locator('.terminal-cursor')).toBeHidden();
+    // Capture the pending-font frame without Playwright waiting for fonts.ready.
+    const capture=await page.context().newCDPSession(page);
+    const {data}=await capture.send('Page.captureScreenshot',{format:'png'});
+    await (await import('node:fs/promises')).writeFile(`output/intro-cold-loading-${width}.png`,Buffer.from(data,'base64'));
+    await capture.detach();
+    releaseFonts();
+    await expect(page.locator('html')).toHaveAttribute('data-intro','blinking');
+    await expect(track).toHaveCSS('visibility','visible');
+    const box=await page.locator('.terminal-cursor').boundingBox();
+    expect(Math.abs(box.x+box.width/2-width/2)).toBeLessThan(2);
+    expect(Math.abs(box.y+box.height/2-450)).toBeLessThan(2);
+    await page.screenshot({path:`output/intro-cold-centered-${width}.png`});
+  });
+}

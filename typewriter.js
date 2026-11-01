@@ -167,6 +167,8 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
     terminal.setAttribute("aria-label", "LaTeX source");
     const track = document.createElement("pre");
     track.className = "terminal-track";
+    // Keep layout measurable, but do not paint at (0, 0) while fonts load.
+    track.style.visibility = "hidden";
     const sourceText = document.createElement("span");
     sourceText.className = "terminal-text";
     const cursor = document.createElement("span");
@@ -300,6 +302,7 @@ export async function setupTypewriterEntrance(reducedMotion, returnOptions = nul
       camera.x = innerWidth / 2 - cursor.offsetLeft - cursor.offsetWidth / 2;
       camera.y = innerHeight / 2 - cursor.offsetTop - cursor.offsetHeight / 2;
       paintCamera();
+      track.style.visibility = "visible";
       let targetX = camera.x;
       let targetY = camera.y;
       let line = cursor.offsetTop;
