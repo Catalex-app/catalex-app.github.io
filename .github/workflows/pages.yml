@@ -1,7 +1,9 @@
 name: Publish website
 
-# Run manually when the repository and public links are ready.
+# Publish each website update; manual runs can select a different docs revision.
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
     inputs:
       docs_ref:
@@ -33,7 +35,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
-          CATALEX_DOCS_REF: ${{ inputs.docs_ref }}
+          CATALEX_DOCS_REF: ${{ inputs.docs_ref || 'main' }}
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
