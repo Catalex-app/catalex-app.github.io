@@ -586,7 +586,7 @@ nav a:hover,
 
 .download-for-mac, .download-action { gap: 8px; }
 .download-apple, .download-github { display: block; flex-shrink: 0; transform: translateY(-1px); }
-.download-for-mac .download-apple, .download-action .download-github { width: 14px; height: 14px; }
+.download-for-mac .download-apple, .download-action .download-apple { width: 14px; height: 14px; }
 .header-download .download-apple { width: 12px; height: 12px; }
 .header-download.button { gap: 7px; background: #18181b; border-color: #18181b; color: #fff; }
 .header-download.button:hover { background: #27272a; }
@@ -789,7 +789,6 @@ html.intro-pending.welcome-returning :is(#main, .site-footer) { opacity: 1; }
 .download-note { margin-top: 24px; }
 .download-note-label { display: inline-flex; align-items: center; vertical-align: baseline; margin-right: 4px; padding: 3px 9px; border-radius: 6px; background: var(--muted); color: #52525b; font-size: 12px; font-weight: 500; line-height: 1.5; }
 .download-note .download-note-label { display: inline; margin: 0; padding: 0; border-radius: 0; background: none; color: #52525b; font-size: inherit; font-weight: 600; line-height: inherit; }
-.download-beta-badge { margin: 0 0 0 6px; vertical-align: middle; letter-spacing: normal; }
 .download-title-name { white-space: nowrap; }
 .download-note p { margin-top: 0; font-size: 14px; line-height: 1.8; text-wrap: pretty; }
 .download-content p a { color: var(--foreground); text-decoration: underline; text-underline-offset: 3px; }

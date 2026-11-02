@@ -93,7 +93,7 @@ test("Welcome view controls support rapid keyboard changes, resize, reduced moti
 });
 
 for(const [width,height] of [[1440,1000],[390,844],[844,390]]) {
-  test(`Welcome preview groups its small product description with Beta is now available at ${width}px`, async({page})=>{
+  test(`Welcome preview groups its small product description with Download at ${width}px`, async({page})=>{
     await page.setViewportSize({width,height});
     await page.emulateMedia({reducedMotion:"no-preference"});
     await page.goto("./?intro=typewriter&playIntro=0");
@@ -433,7 +433,7 @@ test("reduced motion presents the completed terminal result and keyboard entry w
 test("the landing download action works without entering the main screen", async ({page}) => {
   await page.emulateMedia({reducedMotion: "reduce"});
   await page.goto("./?intro=typewriter");
-  await page.locator(".intro-scene").getByRole("link", {name: "Beta is now available"}).click();
+  await page.locator(".intro-scene").getByRole("link", {name: "Download"}).click();
   await expect(page.getByRole("heading", {name: "Welcome to Catalex."})).toBeVisible();
 });
 

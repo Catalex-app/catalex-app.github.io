@@ -65,7 +65,7 @@ for (const [width,height,mode,motion] of [
       expect(await page.evaluate(()=>window.savedButtons.every(el=>!el.isConnected))).toBe(true);
     }
     await expect(page.getByRole("link",{name:"Replay intro"})).toBeHidden();
-    if(width>760) await expect(page.locator(".header-download")).toHaveAccessibleName("Beta download");
+    if(width>760) await expect(page.locator(".header-download")).toHaveAccessibleName("Download");
     else await expect(page.locator(".header-download")).toBeHidden();
     await expect(page.locator(".header-download")).toHaveAttribute("href","./download/");
     await expect(page.locator(".header-github")).toHaveAccessibleName("GitHub");
@@ -140,4 +140,23 @@ test("Replay intro reveals the header with the same expanding circle as Welcome"
   await expect(page.locator("html")).toHaveAttribute("data-intro","ready");
   await expect(page.getByRole("link",{name:"Replay intro"})).toBeVisible();
   await expect(page.locator(".site-header")).toHaveCSS("clip-path","none");
+});
+
+test("Welcome stays simple while the download page follows the latest installer version", async ({page}) => {
+  await page.route("https://api.github.com/repos/Catalex-app/Catalex/releases/latest", route => route.fulfill({
+    json: {tag_name:"v0.1.1", draft:false, prerelease:false, assets:[{name:"Catalex-0.1.1-arm64.dmg",state:"uploaded",size:100,browser_download_url:"https://github.com/Catalex-app/Catalex/releases/download/v0.1.1/Catalex-0.1.1-arm64.dmg"}]},
+  }));
+  await page.goto("./?playIntro=0#top");
+  await expect(page.locator(".download-for-mac")).toHaveText("Download");
+  await expect(page.locator(".download-for-mac")).toHaveAttribute("href","./download/");
+  await page.goto("./download/");
+  await expect(page.locator("[data-download-version]")).toHaveText("Download v0.1.1");
+  await expect(page.locator("[data-download-asset]")).toHaveAttribute("href","https://github.com/Catalex-app/Catalex/releases/download/v0.1.1/Catalex-0.1.1-arm64.dmg");
+});
+
+test("Download page retains a usable version label when GitHub is unavailable", async ({page}) => {
+  await page.route("https://api.github.com/repos/Catalex-app/Catalex/releases/latest", route => route.fulfill({status:403, json:{message:"API rate limit exceeded"}}));
+  await page.goto("./download/");
+  await expect(page.locator("[data-download-version]")).toHaveText("Download v0.1.0");
+  await expect(page.locator("[data-download-asset]")).toHaveAttribute("href","https://github.com/Catalex-app/Catalex/releases/download/v0.1.0/Catalex-0.1.0-arm64.dmg");
 });

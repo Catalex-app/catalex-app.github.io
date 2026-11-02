@@ -345,7 +345,7 @@ test('a missing main script cannot leave the landing page hidden', async ({page}
 });
 
 for (const width of [390, 1040]) {
-  test(`download page links to GitHub releases at ${width}px`, async ({page}) => {
+  test(`download page directly downloads the GitHub DMG at ${width}px`, async ({page}) => {
     await page.setViewportSize({width, height: 1000});
     await page.emulateMedia({reducedMotion: 'reduce'});
     const failures = [];
@@ -358,11 +358,22 @@ for (const width of [390, 1040]) {
       await page.goto('./download/');
     }
     await expect(page).toHaveURL(/\/catalex\.github\.io\/download\/$/);
-    await expect(page.getByRole('heading', {name: 'Welcome to Catalex. Beta'})).toBeVisible();
+    await expect(page.getByRole('heading', {name: 'Welcome to Catalex.'})).toBeVisible();
     expect(await page.locator('.download-icon').evaluate(img => img.complete && img.naturalWidth === 512)).toBe(true);
     const url = page.url();
-    const download = page.getByRole('link', {name: 'Get beta on GitHub Releases', exact: true});
-    await expect(download).toHaveAttribute('href', 'https://github.com/Catalex-app/Catalex/releases');
+    const download = page.getByRole('link', {name: 'Download v0.1.0', exact: true});
+    await expect(download.locator('svg use')).toHaveAttribute('href', '../assets/apple.svg#apple');
+    const assetUrl = 'https://github.com/Catalex-app/Catalex/releases/download/v0.1.0/Catalex-0.1.0-arm64.dmg';
+    await expect(download).toHaveAttribute('href', assetUrl);
+    await page.route(assetUrl, route => route.fulfill({
+      contentType:'application/x-apple-diskimage',
+      headers:{'Content-Disposition':'attachment; filename="Catalex-0.1.0-arm64.dmg"'},
+      body:'test download',
+    }));
+    const started = page.waitForEvent('download');
+    await download.click();
+    expect((await started).suggestedFilename()).toBe('Catalex-0.1.0-arm64.dmg');
+    await expect(page).toHaveURL(url);
     await page.locator('.site-header .brand').click();
     await page.getByRole('button',{name:'Scroll down to learn more'}).click();
     if(width>760) await page.locator('.header-download').click();

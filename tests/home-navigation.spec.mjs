@@ -79,7 +79,7 @@ test("Back, Forward, download refresh, and download logo preserve the right scre
   await page.locator(".header-download").click();
   await page.locator(".site-header .brand").click();
   await ready(page);
-  await page.getByRole("link",{name:"Beta is now available"}).click();
+  await page.getByRole("link",{name:"Download"}).click();
   await page.goBack();
   await ready(page);
 });
