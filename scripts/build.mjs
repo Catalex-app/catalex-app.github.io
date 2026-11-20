@@ -31,7 +31,7 @@ for (const ref of refs) {
 const output = path.join(root, "dist");
 await rm(output, { recursive: true, force: true });
 await mkdir(output);
-for (const file of ["index.html", "download", "styles.css", "app.js", "typewriter.js", "navigation.js", "docs-live.js", "assets", "docs.css"]) {
+for (const file of ["index.html", "googlec7447083222ac99e.html", "download", "styles.css", "app.js", "typewriter.js", "navigation.js", "docs-live.js", "assets", "docs.css"]) {
 	await cp(path.join(root, file), path.join(output, file), { recursive: true, filter: (source) => source !== path.join(root, "assets/workspace") });
 }
 for (const [page, html] of renderedPages) await writeFile(path.join(output, page), html);
